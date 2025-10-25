@@ -39,7 +39,7 @@ export class AppComponent {
   }
 
   // UK tax bands (2025/2026 FY)
-  private readonly bands = [
+  private bands = [
     { name: 'Personal Allowance', lower: 0, upper: 12570, rate: 0 },
     { name: 'Basic rate', lower: 12570, upper: 50270, rate: 0.20 },
     { name: 'Higher rate', lower: 50270, upper: 125140, rate: 0.40 },
@@ -58,18 +58,34 @@ export class AppComponent {
     const breakdown: Breakdown[] = [];
     let tax = 0;
 
-    for (const b of this.bands) {
-      const bandLower = b.lower;
-      const bandUpper = b.upper === Infinity ? Infinity : b.upper;
+    const fullAllowance = this.bands[0].upper; // 12,570
+    let personalAllowance = fullAllowance;
+    if (income > 100_000) {
+      const reduction = Math.floor((income - 100_000) / 2);
+      personalAllowance = Math.max(0, fullAllowance - reduction);
+    }
 
-      const taxableInBand = Math.max(0, Math.min(income, bandUpper) - bandLower);
-      const bandTax = taxableInBand * b.rate;
-      if (taxableInBand > 0) {
-        breakdown.push({ band: b.name, taxedAt: taxableInBand, tax: bandTax });
+    // Add Personal Allowance band (0%): show how much of income sits in the allowance
+    const paUsed = Math.min(income, personalAllowance);
+    if (paUsed > 0) {
+      breakdown.push({ band: 'Personal Allowance', taxedAt: paUsed, tax: 0 });
+    }
+
+    // Taxable income after allowance
+    let remainingTaxable = Math.max(0, income - personalAllowance);
+
+    for (const b of this.bands) {
+      const width = b.upper === Infinity ? Infinity : b.upper - b.lower;
+      const taxedAt = Math.max(0, Math.min(remainingTaxable, width));
+      const bandTax = taxedAt * b.rate;
+
+      if (taxedAt > 0) {
+        breakdown.push({ band: b.name, taxedAt, tax: bandTax });
         tax += bandTax;
+        remainingTaxable -= taxedAt;
       }
 
-      if (income <= bandUpper) {
+      if (remainingTaxable <= 0) {
         break;
       }
     }
