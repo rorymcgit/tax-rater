@@ -1,28 +1,29 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { DecimalPipe } from '@angular/common';
+import { Breakdown, IncomeTax, IncomeTaxCalculator } from './income-tax-calculator.service';
 
-interface Breakdown {
-  band: string;
-  taxedAt: number;
-  tax: number;
-}
+type CalculationResult = { income: number } & IncomeTax;
 
 @Component({
   selector: 'app-root',
   standalone: true,
+  providers: [IncomeTaxCalculator],
   imports: [RouterOutlet, ReactiveFormsModule, DecimalPipe], // ReactiveFormsModule added so component-level imports work without an NgModule
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss'
 })
 export class AppComponent {
   public readonly title = 'Effective Tax Rate Calculator';
+  private readonly incomeTaxCalculator = inject(IncomeTaxCalculator);
 
   public form = new FormGroup({
-    // Store income as string like "12,345.67" in the control for display; parse when calculating
+    // Store income as string (e.g. "12,345.67") in control for display. Parse when calculating
     income: new FormControl<string | null>(null)
   });
+
+  public result: CalculationResult | null = null;
 
   public formatIncomeInput(event: Event): void {
     const input = event.target as HTMLInputElement;
@@ -38,65 +39,13 @@ export class AppComponent {
     }
   }
 
-  // UK tax bands (2025/2026 FY)
-  private bands = [
-    { name: 'Personal Allowance', lower: 0, upper: 12570, rate: 0 },
-    { name: 'Basic rate', lower: 12570, upper: 50270, rate: 0.20 },
-    { name: 'Higher rate', lower: 50270, upper: 125140, rate: 0.40 },
-    { name: 'Additional rate', lower: 125140, upper: Infinity, rate: 0.45 }
-  ];
-
-  public result: {
-    income: number;
-    tax: number;
-    effectiveRate: number; // 0-100
-    breakdown: Breakdown[];
-  } | null = null;
-
   public calculate(): void {
     const income = this.getIncome();
-    const breakdown: Breakdown[] = [];
-    let tax = 0;
-
-    const fullAllowance = this.bands[0].upper; // 12,570
-    let personalAllowance = fullAllowance;
-    if (income > 100_000) {
-      const reduction = Math.floor((income - 100_000) / 2);
-      personalAllowance = Math.max(0, fullAllowance - reduction);
-    }
-
-    // Add Personal Allowance band (0%): show how much of income sits in the allowance
-    const paUsed = Math.min(income, personalAllowance);
-    if (paUsed > 0) {
-      breakdown.push({ band: 'Personal Allowance', taxedAt: paUsed, tax: 0 });
-    }
-
-    // Taxable income after allowance
-    let remainingTaxable = Math.max(0, income - personalAllowance);
-
-    for (const b of this.bands) {
-      const width = b.upper === Infinity ? Infinity : b.upper - b.lower;
-      const taxedAt = Math.max(0, Math.min(remainingTaxable, width));
-      const bandTax = taxedAt * b.rate;
-
-      if (taxedAt > 0) {
-        breakdown.push({ band: b.name, taxedAt, tax: bandTax });
-        tax += bandTax;
-        remainingTaxable -= taxedAt;
-      }
-
-      if (remainingTaxable <= 0) {
-        break;
-      }
-    }
-
-    const effectiveRate = income > 0 ? (tax / income) * 100 : 0;
+    const incomeTax = this.incomeTaxCalculator.calculate(income);
 
     this.result = {
       income,
-      tax: Math.round(tax * 100) / 100,
-      effectiveRate: Math.round(effectiveRate * 100) / 100,
-      breakdown
+      ...incomeTax,
     };
   }
 
