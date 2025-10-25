@@ -3,6 +3,11 @@ import { RouterOutlet } from '@angular/router';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { DecimalPipe } from '@angular/common';
 
+interface Breakdown {
+  band: string;
+  taxedAt: number;
+  tax: number;
+}
 
 @Component({
   selector: 'app-root',
@@ -12,15 +17,29 @@ import { DecimalPipe } from '@angular/common';
   styleUrl: './app.component.scss'
 })
 export class AppComponent {
-  title = 'Effective Tax Rate Calculator';
+  public readonly title = 'Effective Tax Rate Calculator';
 
-  // Reactive form for income input (currency)
-  form = new FormGroup({
-    income: new FormControl<number | null>(null)
+  public form = new FormGroup({
+    // Store income as string like "12,345.67" in the control for display; parse when calculating
+    income: new FormControl<string | null>(null)
   });
 
-  // UK tax bands (2023/24-like values provided in the task)
-  private bands = [
+  public formatIncomeInput(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const raw = input.value || '';
+    const formatted = this.formatWithCommas(raw);
+
+    this.form.get('income')?.setValue(formatted, { emitEvent: false });
+
+    // Update the native input if formatting changed (keeps caret simple by moving to end)
+    if (input.value !== formatted) {
+      input.value = formatted;
+      input.setSelectionRange(formatted.length, formatted.length);
+    }
+  }
+
+  // UK tax bands (2025/2026 FY)
+  private readonly bands = [
     { name: 'Personal Allowance', lower: 0, upper: 12570, rate: 0 },
     { name: 'Basic rate', lower: 12570, upper: 50270, rate: 0.20 },
     { name: 'Higher rate', lower: 50270, upper: 125140, rate: 0.40 },
@@ -31,12 +50,12 @@ export class AppComponent {
     income: number;
     tax: number;
     effectiveRate: number; // 0-100
-    breakdown: Array<{ band: string; taxedAt: number; tax: number }>;
+    breakdown: Breakdown[];
   } | null = null;
 
   public calculate(): void {
-    const income = Number(this.form.get('income')?.value) || 0;
-    const breakdown: Array<{ band: string; taxedAt: number; tax: number }> = [];
+    const income = this.getIncome();
+    const breakdown: Breakdown[] = [];
     let tax = 0;
 
     for (const b of this.bands) {
@@ -51,7 +70,7 @@ export class AppComponent {
       }
 
       if (income <= bandUpper) {
-        break
+        break;
       }
     }
 
@@ -63,5 +82,38 @@ export class AppComponent {
       effectiveRate: Math.round(effectiveRate * 100) / 100,
       breakdown
     };
+  }
+
+  /** Format a numeric string with commas for thousands while preserving decimals */
+  private formatWithCommas(value: string): string {
+    if (!value) {
+      return '';
+    }
+
+    // Remove anything except digits and dot
+    const cleaned = value.replace(/[^0-9.]/g, '');
+    const parts = cleaned.split('.');
+    let intPart = parts[0];
+
+    // Strip leading zeros unless the value is exactly '0' or starts with '0.'
+    // Keep as-is so users can type '0.'
+    intPart = intPart.replace(/^0+(?=\d)/, '');
+
+    // Add commas
+    intPart = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+
+    if (parts.length > 1) {
+      // keep only first decimal part up to 2-3 places? we just preserve what user types
+      const frac = parts[1].replace(/[^0-9]/g, '');
+      return intPart + '.' + frac;
+    }
+    return intPart;
+  }
+
+  private getIncome(): number {
+    // Strip commas and any stray characters from string currency input
+    const raw = this.form.get('income')?.value || '';
+    const numericString = String(raw).replace(/,/g, '').replace(/[^0-9.]/g, '');
+    return Number(numericString) || 0;
   }
 }
