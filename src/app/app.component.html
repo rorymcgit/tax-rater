@@ -1,6 +1,6 @@
 <main class="main">
   <div class="content">
-    <div class="left-side">
+    <div>
       <h1>{{ title }}</h1>
 
       <section class="calculator-section">
@@ -15,33 +15,37 @@
 
         @if (result) {
           <div class="result-box">
-            <strong>Income:</strong> £{{ result.income | number:'1.2-2' }}<br />
-            <strong>Total Tax:</strong> £{{ result.tax | number:'1.2-2' }}<br />
-            <strong>Effective Tax Rate:</strong> {{ result.effectiveRate }} %
+            <div class="headline-figs">
+              <span>Income:</span> £{{ result.income | number:'1.2-2' }}
+            </div>
+            <div class="headline-figs">
+              <span>Total Tax:</span> £{{ result.tax | number:'1.2-2' }}
+            </div>
+            <div class="headline-figs">
+              <span>Effective Tax Rate:</span> {{ result.effectiveRate }}%
+            </div>
 
-            <details open>
-              <summary>Breakdown by band</summary>
-              <div class="table-wrap">
-                <table class="calculator-table">
-                  <thead>
+            <h3>Breakdown by band</h3>
+            <div class="table-wrap">
+              <table class="calculator-table">
+                <thead>
+                  <tr>
+                    <th>Band</th>
+                    <th>Taxed amount</th>
+                    <th>Tax</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (b of result.breakdown; track b.band) {
                     <tr>
-                      <th>Band</th>
-                      <th>Taxed amount</th>
-                      <th>Tax</th>
+                      <td>{{ b.band }}</td>
+                      <td>£{{ b.taxedAt | number:'1.2-2' }}</td>
+                      <td>£{{ b.tax | number:'1.2-2' }}</td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    @for (b of result.breakdown; track b.band) {
-                      <tr>
-                        <td>{{ b.band }}</td>
-                        <td>£{{ b.taxedAt | number:'1.2-2' }}</td>
-                        <td>£{{ b.tax | number:'1.2-2' }}</td>
-                      </tr>
-                    }
-                  </tbody>
-                </table>
-              </div>
-            </details>
+                  }
+                </tbody>
+              </table>
+            </div>
           </div>
         }
       </section>
