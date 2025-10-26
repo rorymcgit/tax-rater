@@ -46,21 +46,26 @@ export class IncomeTaxCalculator {
           : b.upper - personalAllowance;
       }
 
-      const cappedUpper = Math.min(income, bandUpper);
-      const taxableInBand = Math.max(0, cappedUpper - bandLower);
-      const bandTax = taxableInBand * b.rate;
-
-      // Debug
-      console.table({ bandName: b.name, bandLower, bandUpper, cappedUpper, taxableInBand, bandTax });
-
-      if (taxableInBand > 0) {
-        breakdown.push({ band: b.name, taxedAt: taxableInBand, tax: bandTax });
+      // If income < PA, record the taxable amount as income (but taxed at 0%)
+      let taxableInBand: number;
+      if (b.lower === 0 && income < personalAllowance) {
+        taxableInBand = income;
+      } else {
+        const cappedUpper = Math.min(income, bandUpper);
+        taxableInBand = Math.max(0, cappedUpper - bandLower);
       }
 
+      const bandTax = taxableInBand * b.rate;
+      breakdown.push({ band: b.name, taxedAt: taxableInBand, tax: bandTax });
       tax += bandTax;
+
+      // Debug
+      console.table({ bandName: b.name, bandLower, bandUpper, taxableInBand, bandTax });
     }
 
     const effectiveRate = income > 0 ? (tax / income) * 100 : 0;
+
+    console.log('breakdown: ', breakdown);
     return {
       tax,
       effectiveRate,

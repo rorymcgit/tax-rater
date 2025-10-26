@@ -9,18 +9,23 @@ describe('IncomeTaxCalculator', () => {
 
   test('income 0 returns zero tax', () => {
     const res = calc.calculate(0);
+    const taxes = res.breakdown.map(bd => bd.tax);
+    const taxedAt = res.breakdown.map(bd => bd.taxedAt);
+
+    expect(taxes.every(tax => tax === 0)).toBe(true);
+    expect(taxedAt.every(taxedAt => taxedAt === 0)).toBe(true);
     expect(res.tax).toBe(0);
     expect(res.effectiveRate).toBe(0);
-    expect(res.breakdown.length).toBe(0);
   });
 
-  test('under personal allowance (10000) -> no tax', () => {
-    const res = calc.calculate(10000);
-    expect(res.tax).toBe(0);
-    // breakdown should show personal allowance used = income
+  test('under personal allowance (income: £10,000) -> no tax', () => {
+    const res = calc.calculate(10_000);
+
+    // Breakdown should show personal allowance used = income
     const pa = res.breakdown.find(b => b.band === 'Personal Allowance');
     expect(pa).toBeDefined();
-    expect(pa!.taxedAt).toBe(10000);
+    expect(pa!.taxedAt).toBe(10_000);
+    expect(res.tax).toBe(0);
   });
 
   test('Basic rate only (income: £20,000)', () => {
