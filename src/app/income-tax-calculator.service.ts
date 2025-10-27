@@ -27,7 +27,7 @@ export class IncomeTaxCalculator {
     const breakdown: Breakdown[] = [];
     let tax = 0;
 
-    const fullAllowance = this.bands[0].upper; // 12,570
+    const fullAllowance = this.bands[0].upper;
     let personalAllowance = fullAllowance;
     if (income > 100_000) {
       const reduction = Math.floor((income - 100_000) / 2);
@@ -38,13 +38,17 @@ export class IncomeTaxCalculator {
       const bandLower = b.lower;
       let bandUpper;
 
-      if (income > b.upper) {
-        bandUpper = b.upper;
-      } else {
+      // Subtract PA from upper band if income is within band
+      if (income < b.upper) {
         bandUpper = b.upper === Infinity
           ? Infinity
           : b.upper - personalAllowance;
+      } else {
+        bandUpper = b.upper;
       }
+
+      // 1. Set taxableInBand to personalAllowance instead of fullAllowance
+      // 2. Calculation for higher rate when tapering is wrong by 2k, 23,892 vs 25,892
 
       // If income < PA, record the taxable amount as income (but taxed at 0%)
       let taxableInBand: number;
@@ -56,7 +60,12 @@ export class IncomeTaxCalculator {
       }
 
       const bandTax = taxableInBand * b.rate;
-      breakdown.push({ band: b.name, taxedAt: taxableInBand, tax: bandTax });
+      breakdown.push({
+        band: b.name,
+        taxedAt: taxableInBand,
+        tax: bandTax
+      });
+
       tax += bandTax;
 
       // Debug

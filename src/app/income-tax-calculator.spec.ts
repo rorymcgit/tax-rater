@@ -7,7 +7,7 @@ describe('IncomeTaxCalculator', () => {
     calc = new IncomeTaxCalculator();
   });
 
-  test('income 0 returns zero tax', () => {
+  test('Income of 0 returns zero tax', () => {
     const res = calc.calculate(0);
     const taxes = res.breakdown.map(bd => bd.tax);
     const taxedAt = res.breakdown.map(bd => bd.taxedAt);
@@ -18,7 +18,7 @@ describe('IncomeTaxCalculator', () => {
     expect(res.effectiveRate).toBe(0);
   });
 
-  test('under personal allowance (income: £10,000) -> no tax', () => {
+  test('Under personal allowance (income: £10,000) -> no tax', () => {
     const res = calc.calculate(10_000);
 
     // Breakdown should show personal allowance used = income
@@ -30,7 +30,6 @@ describe('IncomeTaxCalculator', () => {
 
   test('Basic rate only (income: £20,000)', () => {
     const res = calc.calculate(20_000);
-    // console.log(res);
 
     // Taxable above PA = 20000 - 12570 = 7430 at 20% => 1486
     expect(res.tax).toBe(1486);
@@ -38,7 +37,7 @@ describe('IncomeTaxCalculator', () => {
     expect(res.effectiveRate).toBeCloseTo(expectedEffectiveRate, 5);
 
     // Taxed amounts should sum to income
-    const totalTaxed = res.breakdown.reduce((s, b) => s + b.taxedAt, 0);
+    const totalTaxed = res.breakdown.reduce((a, b) => a + b.taxedAt, 0);
     expect(totalTaxed).toBeCloseTo(20_000, 5);
   });
 
@@ -51,16 +50,19 @@ describe('IncomeTaxCalculator', () => {
     expect(res.tax).toBe(expectedTax);
   });
 
-  // test('tapering above 100k (110000) reduces personal allowance', () => {
-  //   const res = calc.calculate(110000);
-  //   // reduction = floor((110000 - 100000)/2) = 5000 => PA = 12570 - 5000 = 7570
-  //   const pa = res.breakdown.find(b => b.band === 'Personal Allowance');
-  //   expect(pa).toBeDefined();
-  //   expect(pa!.taxedAt).toBe(7570);
-  //   // taxable remainder should equal income - PA
-  //   const taxedTotal = res.breakdown.reduce((s, b) => s + b.taxedAt, 0);
-  //   expect(taxedTotal).toBeCloseTo(110000, 6);
-  // });
+  test('Tapering above 100k (income: £110,000) reduces personal allowance', () => {
+    const res = calc.calculate(110_000);
+
+    // Reduction = floor((110000 - 100000)/2) = 5000 => PA = 12570 - 5000 = 7570
+    const pa = res.breakdown.find(b => b.band === 'Personal Allowance');
+    expect(pa!.taxedAt).toBe(7570);
+
+    // Taxable remainder should equal income - PA
+    const taxedTotal = res.breakdown.reduce((a, b) => a + b.taxedAt, 0);
+    expect(taxedTotal).toBe(110_000);
+    expect(res.tax).toBe(33432);
+    // expect(res.effectiveRate).toBe(todo);
+  });
 
   // test('large income uses additional rate (200000)', () => {
   //   const res = calc.calculate(200000);
