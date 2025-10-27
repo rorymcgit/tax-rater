@@ -40,7 +40,7 @@
                   @for (b of result.breakdown; track b.band) {
                     <tr>
                       <td>{{ b.band }}</td>
-                      <td>£{{ b.taxedAt | number:'1.2-2' }}</td>
+                      <td>£{{ b.taxable | number:'1.2-2' }}</td>
                       <td>£{{ b.tax | number:'1.2-2' }}</td>
                     </tr>
                   }
