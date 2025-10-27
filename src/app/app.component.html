@@ -23,7 +23,7 @@
               <span>Total Tax:</span> £{{ result.tax | number:'1.2-2' }}
             </div>
             <div class="headline-figs">
-              <span>Effective Tax Rate:</span> {{ result.effectiveRate }}%
+              <span>Effective Tax Rate:</span> {{ result.effectiveRate | number:'1.2-2' }}%
             </div>
 
             <h3>Breakdown by band</h3>
@@ -32,8 +32,8 @@
                 <thead>
                   <tr>
                     <th>Band</th>
-                    <th>Taxed amount</th>
-                    <th>Tax</th>
+                    <th>Taxable Amount</th>
+                    <th>Tax Due</th>
                   </tr>
                 </thead>
                 <tbody>
