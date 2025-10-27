@@ -46,8 +46,13 @@ describe('IncomeTaxCalculator', () => {
 
     // Basic full width 37700 at 20% = 7540
     // Remaining 60000 - 12570 - 37700 = 9730 at 40% = 3892
-    const expectedTax = 11432; // 7540 + 3892
-    expect(res.tax).toBe(expectedTax);
+    const expectedTax = 7540 + 3892;
+    expect(res.tax).toBe(expectedTax); // 11,432
+  });
+
+  test('Higher rate, just below tapering (income: £99,000)', () => {
+    const res = calc.calculate(99_000);
+    expect(res.tax).toBe(27_032);
   });
 
   test('Tapering above 100k (income: £110,000) reduces personal allowance', () => {
@@ -60,7 +65,7 @@ describe('IncomeTaxCalculator', () => {
     // Taxable remainder should equal income - PA
     const taxedTotal = res.breakdown.reduce((a, b) => a + b.taxable, 0);
     expect(taxedTotal).toBe(110_000);
-    expect(res.tax).toBe(33432);
+    expect(res.tax).toBe(33_432);
     // expect(res.effectiveRate).toBe(todo);
   });
 
@@ -74,12 +79,14 @@ describe('IncomeTaxCalculator', () => {
     // Taxable remainder should equal income - PA
     const taxedTotal = res.breakdown.reduce((a, b) => a + b.taxable, 0);
     expect(taxedTotal).toBe(124_000);
-    expect(res.tax).toBe(41832);
+    expect(res.tax).toBe(41_832);
     // expect(res.effectiveRate).toBe(todo);
   });
 
-  // test('Full tapering above 100k (income: £125,140) reduces personal allowance', () => {
-  // });
+  test('Full tapering above 100k (income: £125,140) reduces personal allowance to 0', () => {
+    const res = calc.calculate(125_140);
+    expect(res.tax).toBe(42_516);
+  });
 
   // test('Exact thresholds: at PA (12,570), at basic->higher (50,270), at higher->additional (125,140)', () => {
   //   const resPA = calc.calculate(12_570);
@@ -118,13 +125,14 @@ describe('IncomeTaxCalculator', () => {
   //   expect(res.effectiveRate).toBe(0);
   // });
 
-  // test('Additional Rate (income: £200_000)', () => {
-  //   const res = calc.calculate(200_000);
-  //   // With PA tapered to 0 for 200k, taxable = 200k
-  //   // basic: 37700@20% = 7540
-  //   // higher: 74870@40% = 29948
-  //   // additional: remainder = 200000 - 112570 = 87430 @45% = 39343.5
-  //   const expectedTax = 7540 + 29948 + 39343.5;
-  //   expect(res.tax).toBeCloseTo(expectedTax, 2);
-  // });
+  test('Additional Rate (income: £200_000)', () => {
+    const res = calc.calculate(200_000);
+
+    // With PA tapered to 0 for 200k, taxable = 200k
+    // basic: 37700 at 20% = 7540
+    // higher: 125140 - 37770 = 87440 at 40% = 34,976
+    // additional: 200000 - 125140 = 74860 at 45% = 33,687
+    const expectedTax = 7540 + 34976 + 33687;
+    expect(res.tax).toBe(expectedTax); // 76,203
+  });
 });

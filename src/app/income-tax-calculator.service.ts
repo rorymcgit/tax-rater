@@ -91,13 +91,9 @@ export class IncomeTaxCalculator {
     }
 
     if (grossIncome > higherRate.lower) {
-      let taxable: number;
-      if (grossIncome > higherRate.upper) {
-        taxable = higherRate.upper - higherRate.lower;
-      } else {
-        const basicWidth = basicRate.upper - basicRate.lower;
-        taxable = taxableIncome - basicWidth;
-      }
+      const basicWidth = basicRate.upper - basicRate.lower;
+      const upper = grossIncome > higherRate.upper ? higherRate.upper : taxableIncome
+      const taxable = upper - basicWidth;
 
       const bandTax = taxable * higherRate.rate;
       breakdown.push({ band: 'Higher Rate', taxable, tax: bandTax });
