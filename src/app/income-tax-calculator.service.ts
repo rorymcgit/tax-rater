@@ -34,51 +34,49 @@ export class IncomeTaxCalculator {
       personalAllowance = Math.max(0, fullAllowance - reduction);
     }
 
-    for (const b of this.bands) {
+    // First, record the personal allowance usage (0% band)
+    const paUsed = Math.min(income, personalAllowance);
+    if (paUsed > 0) {
+      breakdown.push({ band: 'Personal Allowance', taxedAt: paUsed, tax: 0 });
+    }
+
+    // Taxable income remaining after PA
+    let remainingTaxable = Math.max(0, income - personalAllowance);
+
+    // Iterate over the non-zero bands, we have already pushed PA
+    const non_zero_bands = this.bands.slice(1);
+    for (const b of non_zero_bands) {
+      // Allocate remaining taxable income into the fixed-width bands (basic/higher/additional)
       const bandLower = b.lower;
-      let bandUpper;
+      const width = b.upper === Infinity ? Infinity : (b.upper - b.lower);
+      const taxedAt = Math.max(0, Math.min(remainingTaxable, width));
+      const bandTax = taxedAt * b.rate;
 
-      // Subtract PA from upper band if income is within band
-      if (income < b.upper) {
-        bandUpper = b.upper === Infinity
-          ? Infinity
-          : b.upper - personalAllowance;
+      if (taxedAt > 0) {
+        breakdown.push({ band: b.name, taxedAt, tax: bandTax });
+        tax += bandTax;
+        remainingTaxable -= taxedAt;
       } else {
-        bandUpper = b.upper;
+        // still push a zero row for consistency with previous behaviour
+        breakdown.push({ band: b.name, taxedAt: 0, tax: 0 });
       }
-
-      // 1. Set taxableInBand to personalAllowance instead of fullAllowance
-      // 2. Calculation for higher rate when tapering is wrong by 2k, 23,892 vs 25,892
-
-      // If income < PA, record the taxable amount as income (but taxed at 0%)
-      let taxableInBand: number;
-      if (b.lower === 0 && income < personalAllowance) {
-        taxableInBand = income;
-      } else {
-        const cappedUpper = Math.min(income, bandUpper);
-        taxableInBand = Math.max(0, cappedUpper - bandLower);
-      }
-
-      const bandTax = taxableInBand * b.rate;
-      breakdown.push({
-        band: b.name,
-        taxedAt: taxableInBand,
-        tax: bandTax
-      });
-
-      tax += bandTax;
 
       // Debug
-      console.table({ bandName: b.name, bandLower, bandUpper, taxableInBand, bandTax });
+      console.table({ bandName: b.name, bandLower, bandUpper: b.upper === Infinity ? Infinity : b.upper, taxedAt, bandTax });
+
+      if (remainingTaxable <= 0) {
+        break;
+      }
     }
 
     const effectiveRate = income > 0 ? (tax / income) * 100 : 0;
 
+    // console.log preserved for debugging parity
     console.log('breakdown: ', breakdown);
     return {
       tax,
       effectiveRate,
       breakdown,
-    }
+    };
   }
 }

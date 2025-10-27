@@ -64,13 +64,66 @@ describe('IncomeTaxCalculator', () => {
     // expect(res.effectiveRate).toBe(todo);
   });
 
-  // test('large income uses additional rate (200000)', () => {
-  //   const res = calc.calculate(200000);
-  //   // With PA tapered to 0 for 200k, taxable = 200k
-  //   // basic: 37700@20% = 7540
-  //   // higher: 74870@40% = 29948
-  //   // additional: remainder = 200000 - 112570 = 87430 @45% = 39343.5
-  //   const expectedTax = 7540 + 29948 + 39343.5;
-  //   expect(res.tax).toBeCloseTo(expectedTax, 2);
+  test('Further tapering above 100k (income: £124,000) reduces personal allowance', () => {
+    const res = calc.calculate(124_000);
+    // Reduction = floor((124000 - 100000)/2) = 12000 => PA = 12570 - 12000 = 570
+    const pa = res.breakdown.find(b => b.band === 'Personal Allowance');
+    expect(pa!.taxedAt).toBe(570);
+
+    // Taxable remainder should equal income - PA
+    const taxedTotal = res.breakdown.reduce((a, b) => a + b.taxedAt, 0);
+    expect(taxedTotal).toBe(124_000);
+    expect(res.tax).toBe(41832);
+    // expect(res.effectiveRate).toBe(todo);
+  });
+
+  // test('Full tapering above 100k (income: £125,140) reduces personal allowance', () => {
   // });
+
+  // test('Exact thresholds: at PA (12,570), at basic->higher (50,270), at higher->additional (125,140)', () => {
+  //   const resPA = calc.calculate(12_570);
+  //   expect(resPA.tax).toBe(0);
+
+  //   const resBasicTop = calc.calculate(50_270);
+  //   // taxable above PA = 50270 - 12570 = 37700 @20% = 7540
+  //   expect(resBasicTop.tax).toBe(7540);
+
+  //   const resHigherTop = calc.calculate(125_140);
+  //   // taxable above PA: 125140 - 12570 = 112570
+  //   // basic: 37700@20% = 7540; higher: (125140 - 50270)=74870@40% = 29948
+  //   expect(resHigherTop.tax).toBe(7540 + 29948);
+  // });
+
+  // test('Taper to zero: income that reduces PA to 0', () => {
+  //   // Find income where reduction >= 12570 -> (income - 100000)/2 >=12570 => income >= 100000 + 25140 = 125140
+  //   const res = calc.calculate(125_140);
+  //   const pa = res.breakdown.find(b => b.band === 'Personal Allowance');
+  //   // PA should be 0 at or above this income
+  //   expect(pa!.taxedAt).toBe(0);
+  // });
+
+  // test('Fractional income preserved and calculated', () => {
+  //   const income = 12345.67;
+  //   const res = calc.calculate(income);
+  //   // ensure effectiveRate is computed and tax >= 0
+  //   expect(res.tax).toBeGreaterThanOrEqual(0);
+  //   const totalTaxed = res.breakdown.reduce((a, b) => a + b.taxedAt, 0);
+  //   expect(totalTaxed).toBeCloseTo(income, 6);
+  // });
+
+  // test('Negative income treated as zero', () => {
+  //   const res = calc.calculate(-5000);
+  //   expect(res.tax).toBe(0);
+  //   expect(res.effectiveRate).toBe(0);
+  // });
+
+  test('large income uses additional rate (200000)', () => {
+    const res = calc.calculate(200000);
+    // With PA tapered to 0 for 200k, taxable = 200k
+    // basic: 37700@20% = 7540
+    // higher: 74870@40% = 29948
+    // additional: remainder = 200000 - 112570 = 87430 @45% = 39343.5
+    const expectedTax = 7540 + 29948 + 39343.5;
+    expect(res.tax).toBeCloseTo(expectedTax, 2);
+  });
 });
