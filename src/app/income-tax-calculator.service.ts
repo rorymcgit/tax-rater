@@ -16,13 +16,6 @@ export interface Breakdown {
 export class IncomeTaxCalculator {
 
   // UK tax bands (2025/2026 FY)
-  // private bands = [
-  //   { name: 'Personal Allowance', lower: 0, upper: 12570, rate: 0 },
-  //   { name: 'Basic rate', lower: 12570, upper: 50270, rate: 0.20 },
-  //   { name: 'Higher rate', lower: 50270, upper: 125140, rate: 0.40 },
-  //   { name: 'Additional rate', lower: 125140, upper: Infinity, rate: 0.45 }
-  // ];
-
   private readonly bands = {
     personalAllowance: {
       lower: 0,
@@ -46,6 +39,67 @@ export class IncomeTaxCalculator {
     }
   };
 
+  private calcBasicRate(grossIncome: number, taxableIncome: number, personalAllowance: number): Breakdown {
+    const { basicRate } = this.bands;
+    const adjustedIncome = taxableIncome + personalAllowance;
+    const upper = grossIncome > basicRate.upper ? basicRate.upper : adjustedIncome;
+    const taxable = upper - basicRate.lower;
+    const tax = taxable * basicRate.rate;
+
+    // Debug
+    console.table({
+      bandName: 'Basic Rate',
+      taxable,
+      tax
+    });
+
+    return {
+      band: 'Basic Rate',
+      taxable,
+      tax
+    }
+  }
+
+  private calcHigherRate(grossIncome: number, taxableIncome: number): Breakdown {
+    const {basicRate, higherRate } = this.bands;
+    const basicWidth = basicRate.upper - basicRate.lower;
+    const upper = grossIncome > higherRate.upper ? higherRate.upper : taxableIncome;
+    const taxable = upper - basicWidth;
+    const tax = taxable * higherRate.rate;
+
+    // Debug
+    console.table({
+      bandName: 'Higher Rate',
+      taxable,
+      tax
+    });
+
+    return {
+      band: 'Higher Rate',
+      taxable,
+      tax
+    }
+  }
+
+  private calcAdditionalRate(taxableIncome: number): Breakdown {
+    const { additionalRate } = this.bands;
+    const taxable = taxableIncome - additionalRate.lower;
+    const tax = taxable * additionalRate.rate;
+
+    // Debug
+    console.table({
+      bandName: 'Additional Rate',
+      taxable,
+      tax
+    });
+
+    return {
+      band: 'Additional Rate',
+      taxable,
+      tax,
+    }
+  }
+
   public calculate(grossIncome: number): IncomeTax {
     const breakdown: Breakdown[] = [];
     let tax = 0;
@@ -58,67 +112,32 @@ export class IncomeTaxCalculator {
     }
 
     // First, record the personal allowance usage (0% band)
-    const pa = Math.min(grossIncome, personalAllowance);
-    if (pa > 0) {
-      breakdown.push({ band: 'Personal Allowance', taxable: pa, tax: 0 });
+    const paUsed = Math.min(grossIncome, personalAllowance);
+    if (paUsed > 0) {
+      breakdown.push({ band: 'Personal Allowance', taxable: paUsed, tax: 0 });
     }
 
-    // Taxable income remaining after PA
-    let taxableIncome = Math.max(0, grossIncome - personalAllowance);
-    console.log('personal allowance: ', pa);
+    const taxableIncome = Math.max(0, grossIncome - personalAllowance);
+    console.log('paUsed: ', paUsed);
     console.log('taxableIncome: ', taxableIncome);
 
     const { basicRate, higherRate, additionalRate } = this.bands;
-
     if (grossIncome > basicRate.lower) {
-      let taxable: number;
-      if (grossIncome > basicRate.upper) {
-        taxable = basicRate.upper - basicRate.lower;
-      } else {
-        taxable = (taxableIncome + personalAllowance) - basicRate.lower;
-      }
-
-      const bandTax = taxable * basicRate.rate;
-      breakdown.push({ band: 'Basic Rate', taxable, tax: bandTax });
-      tax += bandTax;
-
-      // Debug
-      console.table({
-        bandName: 'Basic Rate',
-        taxable,
-        bandTax
-      });
+      const basicBreakdown = this.calcBasicRate(grossIncome, taxableIncome, personalAllowance);
+      breakdown.push(basicBreakdown);
+      tax += basicBreakdown.tax;
     }
 
     if (grossIncome > higherRate.lower) {
-      const basicWidth = basicRate.upper - basicRate.lower;
-      const upper = grossIncome > higherRate.upper ? higherRate.upper : taxableIncome
-      const taxable = upper - basicWidth;
-
-      const bandTax = taxable * higherRate.rate;
-      breakdown.push({ band: 'Higher Rate', taxable, tax: bandTax });
-      tax += bandTax;
-
-      // Debug
-      console.table({
-        bandName: 'Higher Rate',
-        taxable,
-        bandTax
-      });
+      const higherBreakdown = this.calcHigherRate(grossIncome, taxableIncome);
+      breakdown.push(higherBreakdown);
+      tax += higherBreakdown.tax;
     }
 
     if (grossIncome > additionalRate.lower) {
-      const taxable = taxableIncome - additionalRate.lower;
-      const bandTax = taxable * additionalRate.rate;
-      breakdown.push({ band: 'Additional Rate', taxable, tax: bandTax });
-      tax += bandTax;
-
-      // Debug
-      console.table({
-        bandName: 'Additional Rate',
-        taxable,
-        bandTax
-      });
+      const additionalBreakdown = this.calcAdditionalRate(grossIncome);
+      breakdown.push(additionalBreakdown);
+      tax += additionalBreakdown.tax;
     }
 
 
