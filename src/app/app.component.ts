@@ -2,14 +2,22 @@ import { Component, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { DecimalPipe } from '@angular/common';
-import { Breakdown, IncomeTax, IncomeTaxCalculator } from './income-tax-calculator.service';
+import { IncomeTaxCalculator } from './income-tax-calculator.service';
+import { Tax } from './tax.interface';
+import { NationalInsuranceCalculator } from './national-insurance-calculator.service';
 
-type CalculationResult = { income: number } & IncomeTax;
+interface IncomeTax {
+  incomeTax: Tax;
+}
+interface NationalInsurance {
+  nationalInsurance: Tax;
+}
+type CalculationResult = { income: number } & IncomeTax & NationalInsurance;
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  providers: [IncomeTaxCalculator],
+  providers: [IncomeTaxCalculator, NationalInsuranceCalculator],
   imports: [RouterOutlet, ReactiveFormsModule, DecimalPipe], // ReactiveFormsModule added so component-level imports work without an NgModule
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss'
@@ -17,6 +25,7 @@ type CalculationResult = { income: number } & IncomeTax;
 export class AppComponent {
   public readonly title = 'Effective Tax Rate Calculator';
   private readonly incomeTaxCalculator = inject(IncomeTaxCalculator);
+  private readonly nationalInsuranceCalculator = inject(NationalInsuranceCalculator);
 
   public form = new FormGroup({
     // Store income as string (e.g. "12,345.67") in control for display. Parse when calculating
@@ -42,10 +51,14 @@ export class AppComponent {
   public calculate(): void {
     const income = this.getIncome();
     const incomeTax = this.incomeTaxCalculator.calculate(income);
+    const nationalInsurance = this.nationalInsuranceCalculator.calculate(income);
+
+    // Todo aggregate effective rate
 
     this.result = {
       income,
-      ...incomeTax,
+      incomeTax,
+      nationalInsurance
     };
   }
 
