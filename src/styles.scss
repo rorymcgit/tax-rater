@@ -1,6 +1,6 @@
 body {
   background: #00001e;
-  color: #c7c7c7;
+  color: #e2e0e0;
   font-family: 'DM Sans', sans-serif;
   font-weight: 800;
 }
@@ -14,8 +14,13 @@ select {
   border-radius: 8px;
   color: #00001e;
   font-weight: 800;
+
+  &::placeholder {
+    color: #17174c;
+  }
 }
 
-button {
+button,
+select {
   cursor: pointer;
 }

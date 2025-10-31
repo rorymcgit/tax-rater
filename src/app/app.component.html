@@ -10,7 +10,6 @@
 
       <section class="calculator-section">
         <form [formGroup]="form" (ngSubmit)="calculate()" novalidate>
-          <!-- <label for="income">Income (GBP)</label> -->
           <div class="input-row">
             <span>£</span>
             <input id="income" type="text" inputmode="decimal" autocomplete="off"
@@ -29,6 +28,9 @@
             </div>
             <div class="headline-figs">
               <span>National Insurance:</span> £{{ result.nationalInsurance.tax | number:'1.2-2' }}
+            </div>
+            <div class="headline-figs">
+              <span>Effective Tax Rate:</span> {{ result.effectiveRate | number:'1.2-2' }}%
             </div>
 
             <h3>Income Tax - Breakdown by Band</h3>
@@ -73,10 +75,6 @@
                   }
                 </tbody>
               </table>
-            </div>
-
-            <div class="effective-rate">
-              <span>Effective Tax Rate:</span> {{ result.effectiveRate | number:'1.2-2' }}%
             </div>
           </div>
         }
