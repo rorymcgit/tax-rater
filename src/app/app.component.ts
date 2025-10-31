@@ -37,7 +37,7 @@ type CalculationResult = {
   styleUrl: './app.component.scss'
 })
 export class AppComponent {
-  public readonly title = 'Effective Tax Rate Calculator';
+  public readonly title = 'Tax Calculator';
   private readonly incomeTaxCalculator = inject(IncomeTaxCalculator);
   private readonly nationalInsuranceCalculator = inject(NationalInsuranceCalculator);
 
@@ -64,6 +64,10 @@ export class AppComponent {
 
   public calculate(): void {
     const income = this.getIncome();
+    if (income === 0) {
+      return;
+    }
+
     const incomeTax = this.incomeTaxCalculator.calculate(income);
     const nationalInsurance = this.nationalInsuranceCalculator.calculate(income);
 
