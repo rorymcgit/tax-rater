@@ -3,19 +3,25 @@ import { RouterOutlet } from '@angular/router';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { DecimalPipe } from '@angular/common';
 import { IncomeTaxCalculator } from './income-tax-calculator.service';
-import { Tax } from './tax-breakdown.interface';
+import { Breakdown, Tax } from './tax-breakdown.interface';
 import { NationalInsuranceCalculator } from './national-insurance-calculator.service';
 
-interface IncomeTax {
-  incomeTax: Tax;
-}
-interface NationalInsurance {
-  nationalInsurance: Tax;
-}
 type CalculationResult = {
-  income: number;
   effectiveRate: number;
-} & IncomeTax & NationalInsurance;
+  headlineFigures: HeadlineFigure[];
+  incomeTaxBreakdown: Breakdown[];
+  nationalInsuranceBreakdown: Breakdown[];
+};
+
+
+interface HeadlineFigure {
+  label: string;
+  annual: number;
+  month: number;
+  week: number;
+  day: number;
+}
+
 
 /*
   TODO
@@ -62,6 +68,46 @@ export class AppComponent {
     }
   }
 
+  private getFigsByFrequency(fig: number): Omit<HeadlineFigure, 'label'> {
+    return {
+      annual: fig,
+      month: fig / 12,
+      week: fig / 52,
+      day: fig / 252,
+    }
+  }
+
+  private breakdownHeadlineFigures(income: number, incomeTax: number, nationalInsurance: number): HeadlineFigure[] {
+    const incomeHeadline: HeadlineFigure = {
+      label: 'Income',
+      ...this.getFigsByFrequency(income),
+    };
+
+    const incomeTaxHeadline: HeadlineFigure = {
+      label: 'Income Tax',
+      ...this.getFigsByFrequency(incomeTax),
+    };
+
+    const nationalInsuranceHeadline: HeadlineFigure = {
+      label: 'National Insurance',
+      ...this.getFigsByFrequency(nationalInsurance),
+    };
+
+    const takeHome = income - incomeTax - nationalInsurance;
+    const takeHomeHeadline: HeadlineFigure = {
+      label: 'Take Home',
+      ...this.getFigsByFrequency(takeHome)
+    }
+
+
+    return [
+      incomeHeadline,
+      incomeTaxHeadline,
+      nationalInsuranceHeadline,
+      takeHomeHeadline,
+    ];
+  }
+
   public calculate(): void {
     const income = this.getIncome();
     if (income === 0) {
@@ -71,14 +117,13 @@ export class AppComponent {
     const incomeTax = this.incomeTaxCalculator.calculate(income);
     const nationalInsurance = this.nationalInsuranceCalculator.calculate(income);
 
-    // Todo aggregate effective rate
     const effectiveRate = (incomeTax.tax + nationalInsurance.tax) / income * 100;
 
     this.result = {
-      income,
-      incomeTax,
-      nationalInsurance,
-      effectiveRate
+      effectiveRate,
+      headlineFigures: this.breakdownHeadlineFigures(income, incomeTax.tax, nationalInsurance.tax),
+      incomeTaxBreakdown: incomeTax.breakdown,
+      nationalInsuranceBreakdown: nationalInsurance.breakdown,
     };
   }
 
