@@ -3,7 +3,7 @@ import { RouterOutlet } from '@angular/router';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { DecimalPipe } from '@angular/common';
 import { IncomeTaxCalculator } from './income-tax-calculator.service';
-import { Tax } from './tax.interface';
+import { Tax } from './tax-breakdown.interface';
 import { NationalInsuranceCalculator } from './national-insurance-calculator.service';
 
 interface IncomeTax {

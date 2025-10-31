@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { Breakdown } from './breakdown.interface';
+import { Breakdown, Tax } from './tax-breakdown.interface';
 
 /*
   https://www.gov.uk/income-tax-rates
@@ -31,7 +31,7 @@ export class IncomeTaxCalculator {
     }
   };
 
-  public calculate(grossIncome: number): IncomeTax {
+  public calculate(grossIncome: number): Tax {
     const breakdown: Breakdown[] = [];
     let tax = 0;
 
@@ -49,8 +49,8 @@ export class IncomeTaxCalculator {
     }
 
     const taxableIncome = Math.max(0, grossIncome - personalAllowance);
-    console.log('paUsed: ', paUsed);
-    console.log('taxableIncome: ', taxableIncome);
+    // console.log('paUsed: ', paUsed);
+    // console.log('taxableIncome: ', taxableIncome);
 
     const { basicRate, higherRate, additionalRate } = this.BANDS;
     if (grossIncome > basicRate.lower) {
@@ -71,7 +71,7 @@ export class IncomeTaxCalculator {
       tax += additionalBreakdown.tax;
     }
 
-    console.table(breakdown);
+    // console.table(breakdown);
     return {
       tax,
       breakdown,

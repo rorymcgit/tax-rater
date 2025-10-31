@@ -1,11 +1,11 @@
 import { Injectable } from '@angular/core';
-import { Tax } from './tax.interface';
+import { Breakdown, Tax } from './tax-breakdown.interface';
 
 
 /*
   NOTE: This is EMPLOYEE NICs (Class 1) only
 
-  TODO: Add other categories
+  TODO: Add other categories (+ checkboxes/dropdowns in UI to help categorise user)
   TODO: Add self-employed rates
   TODO: Add employer side too
 
@@ -23,8 +23,7 @@ import { Tax } from './tax.interface';
 export class NationalInsuranceCalculator {
 
   // UK national insurance bands (2025/2026 FY)
-  // FYI this is for Category "A" only - which _most_ people fit into
-  // TODO add some checkboxes/fields to allow us to categorise the user
+  // FYI this is for Category A only - which _most_ people fit into
   private readonly BANDS = {
     bottom: {
       lower: 0,
@@ -44,6 +43,55 @@ export class NationalInsuranceCalculator {
   };
 
   public calculate(income: number): Tax {
+    let tax = 0;
+    const breakdown: Breakdown[] = [];
 
+    // Subtract the tax-free rate
+    const taxable = Math.max(0, income - this.BANDS.bottom.upper);  // 27,416
+
+    // Early exit if nothing to tax
+    if (taxable === 0)  {
+      return {
+        tax,
+        breakdown,
+      };
+    }
+
+    const { mid } = this.BANDS;
+    const midRange = mid.upper - mid.lower;   // 37,700
+    const midTaxable = Math.min(taxable, midRange);
+    const midTax = midTaxable * mid.rate;
+    const midBreakdown = {
+      band: 'Middle',
+      taxable: midTaxable,
+      tax: midTax
+    }
+    breakdown.push(midBreakdown);
+    tax += midTax;
+
+    console.table(breakdown);
+
+    const { higher } = this.BANDS;
+    const higherTaxable = Math.max(0, income - this.BANDS.higher.lower);
+    if (higherTaxable === 0) {
+      return {
+        tax,
+        breakdown
+      };
+    }
+
+    const higherTax = higherTaxable * higher.rate;
+    const higherBreakdown = {
+      band: 'Higher',
+      taxable: higherTaxable,
+      tax: higherTax,
+    };
+    breakdown.push(higherBreakdown);
+    tax += higherTax;
+
+    return {
+      tax,
+      breakdown
+    }
   }
 }
