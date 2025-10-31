@@ -12,8 +12,22 @@ interface IncomeTax {
 interface NationalInsurance {
   nationalInsurance: Tax;
 }
-type CalculationResult = { income: number } & IncomeTax & NationalInsurance;
+type CalculationResult = {
+  income: number;
+  effectiveRate: number;
+} & IncomeTax & NationalInsurance;
 
+/*
+  TODO
+    * Add:
+      - student loan
+      - pension contributions
+      - average spend VAT
+      - average spend CGT
+      - council tax
+      - car tax
+    * Add for other countries (comparison table)
+ */
 @Component({
   selector: 'app-root',
   standalone: true,
@@ -54,11 +68,13 @@ export class AppComponent {
     const nationalInsurance = this.nationalInsuranceCalculator.calculate(income);
 
     // Todo aggregate effective rate
+    const effectiveRate = (incomeTax.tax + nationalInsurance.tax) / income * 100;
 
     this.result = {
       income,
       incomeTax,
-      nationalInsurance
+      nationalInsurance,
+      effectiveRate
     };
   }
 

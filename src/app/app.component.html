@@ -25,11 +25,11 @@
             <div class="headline-figs">
               <span>National Insurance:</span> £{{ result.nationalInsurance.tax | number:'1.2-2' }}
             </div>
-            <!-- <div class="headline-figs">
+            <div class="headline-figs">
               <span>Effective Tax Rate:</span> {{ result.effectiveRate | number:'1.2-2' }}%
-            </div> -->
+            </div>
 
-            <h3>Income Tax Breakdown by band</h3>
+            <h3>Income Tax - Breakdown by Band</h3>
             <div class="table-wrap">
               <table class="calculator-table">
                 <thead>
@@ -41,6 +41,28 @@
                 </thead>
                 <tbody>
                   @for (b of result.incomeTax.breakdown; track b.band) {
+                    <tr>
+                      <td>{{ b.band }}</td>
+                      <td>£{{ b.taxable | number:'1.2-2' }}</td>
+                      <td>£{{ b.tax | number:'1.2-2' }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+
+            <h3>National Insurance - Breakdown by Band</h3>
+            <div class="table-wrap">
+              <table class="calculator-table">
+                <thead>
+                  <tr>
+                    <th>Band</th>
+                    <th>Taxable Amount</th>
+                    <th>Tax Due</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (b of result.nationalInsurance.breakdown; track b.band) {
                     <tr>
                       <td>{{ b.band }}</td>
                       <td>£{{ b.taxable | number:'1.2-2' }}</td>
