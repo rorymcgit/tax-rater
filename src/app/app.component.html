@@ -3,24 +3,31 @@
     <div class="content">
       <h1>{{ title }}</h1>
 
-      <label for="country-select">Residence: </label>
-      <select name="country" id="country-select">
-        <option value="uk">UK</option>
-      </select>
+      <div class="form-element">
+        <label for="country-select">Residence: </label>
+        <select name="country" id="country-select">
+          <option value="uk">UK</option>
+        </select>
+      </div>
 
-      <section class="calculator-section">
-        <form [formGroup]="form" (ngSubmit)="calculate()" novalidate>
-
-          <label for="country-select">Income: </label>
+      <form [formGroup]="form" (ngSubmit)="calculate()" novalidate>
+        <div class="form-element">
+          <label for="income">Income: </label>
           <div class="input-row">
             <span>£</span>
             <!-- TODO add up/down (+ shift) handlers to increment value  -->
             <input id="income" type="text" inputmode="decimal" autocomplete="off"
               formControlName="income" placeholder="Enter annual income..." (input)="formatIncomeInput($event)" />
-            <button type="submit">Calculate</button>
-          </div>
-        </form>
+            </div>
+        </div>
+        <div class="button-container">
+          <button type="submit">
+            Calculate
+          </button>
+        </div>
+      </form>
 
+      <section class="calculator-section">
         @if (result) {
           <div class="result-box">
             <div class="table-wrap">

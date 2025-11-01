@@ -4,7 +4,7 @@ import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { DecimalPipe } from '@angular/common';
 import { IncomeTaxCalculator } from './income-tax-calculator.service';
 import { Breakdown, Tax } from './tax-breakdown.interface';
-import { NationalInsuranceCalculator } from './national-insurance-calculator.service';
+import { NationalInsuranceEmployeeCalculator } from './national-insurance-calculator.service';
 
 type CalculationResult = {
   effectiveRate: number;
@@ -37,7 +37,7 @@ interface HeadlineFigure {
 @Component({
   selector: 'app-root',
   standalone: true,
-  providers: [IncomeTaxCalculator, NationalInsuranceCalculator],
+  providers: [IncomeTaxCalculator, NationalInsuranceEmployeeCalculator],
   imports: [RouterOutlet, ReactiveFormsModule, DecimalPipe], // ReactiveFormsModule added so component-level imports work without an NgModule
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss'
@@ -47,7 +47,7 @@ export class AppComponent {
   public incomeTaxExpanded = false;
   public nationalInsuranceExpanded = false;
   private readonly incomeTaxCalculator = inject(IncomeTaxCalculator);
-  private readonly nationalInsuranceCalculator = inject(NationalInsuranceCalculator);
+  private readonly nationalInsuranceCalculator = inject(NationalInsuranceEmployeeCalculator);
 
   public form = new FormGroup({
     // Store income as string (e.g. "12,345.67") in control for display. Parse when calculating

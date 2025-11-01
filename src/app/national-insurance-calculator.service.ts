@@ -20,11 +20,11 @@ import { Breakdown, Tax } from './tax-breakdown.interface';
     2%      £967+               £4,189+
   */
 @Injectable()
-export class NationalInsuranceCalculator {
+export class NationalInsuranceEmployeeCalculator {
 
   // UK national insurance bands (2025/2026 FY)
   // FYI this is for Category A only - which _most_ people fit into
-  private readonly BANDS = {
+  private readonly EMPLOYEE_BANDS = {
     bottom: {
       lower: 0,
       upper: 12584,
@@ -47,7 +47,7 @@ export class NationalInsuranceCalculator {
     const breakdown: Breakdown[] = [];
 
     // Subtract the tax-free rate
-    const taxable = Math.max(0, income - this.BANDS.bottom.upper);  // 27,416
+    const taxable = Math.max(0, income - this.EMPLOYEE_BANDS.bottom.upper);  // 27,416
 
     // Early exit if nothing to tax
     if (taxable === 0)  {
@@ -57,7 +57,7 @@ export class NationalInsuranceCalculator {
       };
     }
 
-    const { mid } = this.BANDS;
+    const { mid } = this.EMPLOYEE_BANDS;
     const midRange = mid.upper - mid.lower;   // 37,700
     const midTaxable = Math.min(taxable, midRange);
     const midTax = midTaxable * mid.rate;
@@ -71,8 +71,8 @@ export class NationalInsuranceCalculator {
 
     console.table(breakdown);
 
-    const { higher } = this.BANDS;
-    const higherTaxable = Math.max(0, income - this.BANDS.higher.lower);
+    const { higher } = this.EMPLOYEE_BANDS;
+    const higherTaxable = Math.max(0, income - this.EMPLOYEE_BANDS.higher.lower);
     if (higherTaxable === 0) {
       return {
         tax,

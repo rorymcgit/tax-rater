@@ -1,10 +1,10 @@
-import { NationalInsuranceCalculator } from './national-insurance-calculator.service';
+import { NationalInsuranceEmployeeCalculator } from './national-insurance-calculator.service';
 
 describe('NationalInsuranceCalculator', () => {
-  let calc: NationalInsuranceCalculator;
+  let calc: NationalInsuranceEmployeeCalculator;
 
   beforeEach(() => {
-    calc = new NationalInsuranceCalculator();
+    calc = new NationalInsuranceEmployeeCalculator();
   });
 
   test('Bottom + Mid rates applied (income: £40,000', () => {
