@@ -44,6 +44,8 @@ interface HeadlineFigure {
 })
 export class AppComponent {
   public readonly title = 'Tax Calculator';
+  public incomeTaxExpanded = false;
+  public nationalInsuranceExpanded = false;
   private readonly incomeTaxCalculator = inject(IncomeTaxCalculator);
   private readonly nationalInsuranceCalculator = inject(NationalInsuranceCalculator);
 
@@ -53,6 +55,16 @@ export class AppComponent {
   });
 
   public result: CalculationResult | null = null;
+
+  public toggleNationalInsuranceExpanded(): void {
+    this.incomeTaxExpanded = false;
+    this.nationalInsuranceExpanded = !this.nationalInsuranceExpanded;
+  }
+
+  public toggleIncomeTaxExpanded(): void {
+    this.nationalInsuranceExpanded = false;
+    this.incomeTaxExpanded = !this.incomeTaxExpanded;
+  }
 
   public formatIncomeInput(event: Event): void {
     const input = event.target as HTMLInputElement;
@@ -79,7 +91,7 @@ export class AppComponent {
 
   private breakdownHeadlineFigures(income: number, incomeTax: number, nationalInsurance: number): HeadlineFigure[] {
     const incomeHeadline: HeadlineFigure = {
-      label: 'Income',
+      label: 'Gross Income',
       ...this.getFigsByFrequency(income),
     };
 

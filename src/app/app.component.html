@@ -37,7 +37,19 @@
                 <tbody>
                   @for (fig of result.headlineFigures; track fig.label) {
                     <tr>
-                      <td>{{ fig.label }}</td>
+                        <td>
+                          @if (fig.label === 'Income Tax') {
+                            <button class="inline-summary" type="button" (click)="toggleIncomeTaxExpanded()">
+                              <span class="arrow">{{ incomeTaxExpanded ? '▾' : '▸' }}</span> {{ fig.label }}
+                            </button>
+                          } @else if (fig.label === 'National Insurance') {
+                            <button class="inline-summary" type="button" (click)="toggleNationalInsuranceExpanded()">
+                              <span class="arrow">{{ nationalInsuranceExpanded ? '▾' : '▸' }}</span> {{ fig.label }}
+                            </button>
+                          } @else {
+                            {{ fig.label }}
+                          }
+                        </td>
                       <td>£{{ fig.annual | number:'1.2-2' }}</td>
                       <td>£{{ fig.month | number:'1.2-2' }}</td>
                       <td>£{{ fig.week | number:'1.2-2' }}</td>
@@ -52,49 +64,53 @@
               Effective Tax Rate: {{ result.effectiveRate | number:'1.2-2' }}%
             </h3>
 
-            <h3>Income Tax - Breakdown by Band</h3>
-            <div class="table-wrap">
-              <table class="calculator-table">
-                <thead>
-                  <tr>
-                    <th>Band</th>
-                    <th>Taxable Amount</th>
-                    <th>Tax Due</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  @for (b of result.incomeTaxBreakdown; track b.band) {
+            @if (incomeTaxExpanded) {
+              <div class="full-width-breakdown">
+                <h3>Income Tax - Breakdown by Band</h3>
+                <div class="table-wrap">
+                  <table class="calculator-table">
+                    <thead>
+                      <tr>
+                        <th>Band</th>
+                        <th>Taxable Amount</th>
+                        <th>Tax Due</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (b of result.incomeTaxBreakdown; track b.band) {
+                        <tr>
+                          <td>{{ b.band }}</td>
+                          <td>£{{ b.taxable | number:'1.2-2' }}</td>
+                          <td>£{{ b.tax | number:'1.2-2' }}</td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            } @else if (nationalInsuranceExpanded) {
+              <h3>National Insurance - Breakdown by Band</h3>
+              <div class="table-wrap">
+                <table class="calculator-table">
+                  <thead>
                     <tr>
-                      <td>{{ b.band }}</td>
-                      <td>£{{ b.taxable | number:'1.2-2' }}</td>
-                      <td>£{{ b.tax | number:'1.2-2' }}</td>
+                      <th>Band</th>
+                      <th>Taxable Amount</th>
+                      <th>Tax Due</th>
                     </tr>
-                  }
-                </tbody>
-              </table>
-            </div>
-
-            <h3>National Insurance - Breakdown by Band</h3>
-            <div class="table-wrap">
-              <table class="calculator-table">
-                <thead>
-                  <tr>
-                    <th>Band</th>
-                    <th>Taxable Amount</th>
-                    <th>Tax Due</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  @for (b of result.nationalInsuranceBreakdown; track b.band) {
-                    <tr>
-                      <td>{{ b.band }}</td>
-                      <td>£{{ b.taxable | number:'1.2-2' }}</td>
-                      <td>£{{ b.tax | number:'1.2-2' }}</td>
-                    </tr>
-                  }
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    @for (b of result.nationalInsuranceBreakdown; track b.band) {
+                      <tr>
+                        <td>{{ b.band }}</td>
+                        <td>£{{ b.taxable | number:'1.2-2' }}</td>
+                        <td>£{{ b.tax | number:'1.2-2' }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            }
           </div>
         }
       </section>
