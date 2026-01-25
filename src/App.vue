@@ -1,0 +1,467 @@
+<script setup lang="ts">
+import { ref } from 'vue'
+import { calculateIncomeTax } from './calculators/income-tax'
+import { calculateNationalInsurance } from './calculators/national-insurance'
+import type { Breakdown } from './types/tax'
+
+interface HeadlineFigure {
+  label: string
+  annual: number
+  month: number
+  week: number
+  day: number
+}
+
+interface CalculationResult {
+  effectiveRate: number
+  headlineFigures: HeadlineFigure[]
+  incomeTaxBreakdown: Breakdown[]
+  nationalInsuranceBreakdown: Breakdown[]
+}
+
+const title = 'Tax Calculator'
+const income = ref('')
+const result = ref<CalculationResult | null>(null)
+const incomeTaxExpanded = ref(false)
+const nationalInsuranceExpanded = ref(false)
+
+function formatCurrency(value: number): string {
+  return value.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+
+function toggleNationalInsuranceExpanded(): void {
+  incomeTaxExpanded.value = false
+  nationalInsuranceExpanded.value = !nationalInsuranceExpanded.value
+}
+
+function toggleIncomeTaxExpanded(): void {
+  nationalInsuranceExpanded.value = false
+  incomeTaxExpanded.value = !incomeTaxExpanded.value
+}
+
+function formatIncomeInput(event: Event): void {
+  const input = event.target as HTMLInputElement
+  const raw = input.value || ''
+  const formatted = formatWithCommas(raw)
+
+  income.value = formatted
+
+  // Update the native input if formatting changed (keeps caret simple by moving to end)
+  if (input.value !== formatted) {
+    input.value = formatted
+    input.setSelectionRange(formatted.length, formatted.length)
+  }
+}
+
+function getFigsByFrequency(fig: number): Omit<HeadlineFigure, 'label'> {
+  return {
+    annual: fig,
+    month: fig / 12,
+    week: fig / 52,
+    day: fig / 252,
+  }
+}
+
+function breakdownHeadlineFigures(incomeVal: number, incomeTax: number, nationalInsurance: number): HeadlineFigure[] {
+  const incomeHeadline: HeadlineFigure = {
+    label: 'Gross Income',
+    ...getFigsByFrequency(incomeVal),
+  }
+
+  const incomeTaxHeadline: HeadlineFigure = {
+    label: 'Income Tax',
+    ...getFigsByFrequency(incomeTax),
+  }
+
+  const nationalInsuranceHeadline: HeadlineFigure = {
+    label: 'National Insurance',
+    ...getFigsByFrequency(nationalInsurance),
+  }
+
+  const takeHome = incomeVal - incomeTax - nationalInsurance
+  const takeHomeHeadline: HeadlineFigure = {
+    label: 'Take Home',
+    ...getFigsByFrequency(takeHome)
+  }
+
+  return [
+    incomeHeadline,
+    incomeTaxHeadline,
+    nationalInsuranceHeadline,
+    takeHomeHeadline,
+  ]
+}
+
+function calculate(): void {
+  const incomeVal = getIncome()
+  if (incomeVal === 0) {
+    return
+  }
+
+  const incomeTax = calculateIncomeTax(incomeVal)
+  const nationalInsurance = calculateNationalInsurance(incomeVal)
+
+  const effectiveRate = (incomeTax.tax + nationalInsurance.tax) / incomeVal * 100
+
+  result.value = {
+    effectiveRate,
+    headlineFigures: breakdownHeadlineFigures(incomeVal, incomeTax.tax, nationalInsurance.tax),
+    incomeTaxBreakdown: incomeTax.breakdown,
+    nationalInsuranceBreakdown: nationalInsurance.breakdown,
+  }
+}
+
+function formatWithCommas(value: string): string {
+  if (!value) {
+    return ''
+  }
+
+  // Remove anything except digits and dot
+  const cleaned = value.replace(/[^0-9.]/g, '')
+  const parts = cleaned.split('.')
+  let intPart = parts[0]
+
+  // Strip leading zeros unless the value is exactly '0' or starts with '0.'
+  intPart = intPart.replace(/^0+(?=\d)/, '')
+
+  // Add commas
+  intPart = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+
+  if (parts.length > 1) {
+    const frac = parts[1].replace(/[^0-9]/g, '')
+    return intPart + '.' + frac
+  }
+  return intPart
+}
+
+function getIncome(): number {
+  const raw = income.value || ''
+  const numericString = String(raw).replace(/,/g, '').replace(/[^0-9.]/g, '')
+  return Number(numericString) || 0
+}
+</script>
+
+<template>
+  <main class="main">
+    <div class="content-container">
+      <div class="content">
+        <h1>{{ title }}</h1>
+
+        <div class="form-element">
+          <label for="country-select">Residence: </label>
+          <select name="country" id="country-select">
+            <option value="uk">UK</option>
+          </select>
+        </div>
+
+        <form @submit.prevent="calculate" novalidate>
+          <div class="form-element">
+            <label for="income">Income: </label>
+            <div class="input-row">
+              <span>£</span>
+              <input
+                id="income"
+                type="text"
+                inputmode="decimal"
+                autocomplete="off"
+                :value="income"
+                placeholder="Enter annual income..."
+                @input="formatIncomeInput"
+              />
+            </div>
+          </div>
+          <div class="button-container">
+            <button type="submit">
+              Calculate
+            </button>
+          </div>
+        </form>
+
+        <section class="calculator-section">
+          <div v-if="result" class="result-box">
+            <div class="table-wrap">
+              <table class="calculator-table">
+                <thead>
+                  <tr>
+                    <th></th>
+                    <th>Annually</th>
+                    <th>Monthly</th>
+                    <th>Weekly</th>
+                    <th>Daily</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="fig in result.headlineFigures" :key="fig.label">
+                    <td>
+                      <button
+                        v-if="fig.label === 'Income Tax'"
+                        class="inline-summary"
+                        type="button"
+                        @click="toggleIncomeTaxExpanded"
+                      >
+                        <span class="arrow">{{ incomeTaxExpanded ? '▾' : '▸' }}</span> {{ fig.label }}
+                      </button>
+                      <button
+                        v-else-if="fig.label === 'National Insurance'"
+                        class="inline-summary"
+                        type="button"
+                        @click="toggleNationalInsuranceExpanded"
+                      >
+                        <span class="arrow">{{ nationalInsuranceExpanded ? '▾' : '▸' }}</span> {{ fig.label }}
+                      </button>
+                      <template v-else>
+                        {{ fig.label }}
+                      </template>
+                    </td>
+                    <td>£{{ formatCurrency(fig.annual) }}</td>
+                    <td>£{{ formatCurrency(fig.month) }}</td>
+                    <td>£{{ formatCurrency(fig.week) }}</td>
+                    <td>£{{ formatCurrency(fig.day) }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <h3 class="effective-rate">
+              Effective Tax Rate: {{ formatCurrency(result.effectiveRate) }}%
+            </h3>
+
+            <div v-if="incomeTaxExpanded" class="full-width-breakdown">
+              <h3>Income Tax - Breakdown by Band</h3>
+              <div class="table-wrap">
+                <table class="calculator-table">
+                  <thead>
+                    <tr>
+                      <th>Band</th>
+                      <th>Taxable Amount</th>
+                      <th>Tax Due</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="b in result.incomeTaxBreakdown" :key="b.band">
+                      <td>{{ b.band }}</td>
+                      <td>£{{ formatCurrency(b.taxable) }}</td>
+                      <td>£{{ formatCurrency(b.tax) }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <template v-else-if="nationalInsuranceExpanded">
+              <h3>National Insurance - Breakdown by Band</h3>
+              <div class="table-wrap">
+                <table class="calculator-table">
+                  <thead>
+                    <tr>
+                      <th>Band</th>
+                      <th>Taxable Amount</th>
+                      <th>Tax Due</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="b in result.nationalInsuranceBreakdown" :key="b.band">
+                      <td>{{ b.band }}</td>
+                      <td>£{{ formatCurrency(b.taxable) }}</td>
+                      <td>£{{ formatCurrency(b.tax) }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </template>
+          </div>
+        </section>
+      </div>
+    </div>
+  </main>
+</template>
+
+<style scoped lang="scss">
+$bright-blue: oklch(51.01% 0.274 263.83);
+$electric-violet: oklch(53.18% 0.28 296.97);
+$french-violet: oklch(47.66% 0.246 305.88);
+$vivid-pink: oklch(69.02% 0.277 332.77);
+$hot-red: oklch(61.42% 0.238 15.34);
+$orange-red: oklch(63.32% 0.24 31.68);
+
+$gray-900: oklch(19.37% 0.006 300.98);
+$gray-700: oklch(36.98% 0.014 302.71);
+$gray-400: oklch(70.9% 0.015 304.04);
+
+$red-to-pink-to-purple-vertical-gradient: linear-gradient(
+  180deg,
+  $orange-red 0%,
+  $vivid-pink 50%,
+  $electric-violet 100%
+);
+
+$red-to-pink-to-purple-horizontal-gradient: linear-gradient(
+  90deg,
+  $orange-red 0%,
+  $vivid-pink 50%,
+  $electric-violet 100%
+);
+
+h1 {
+  font-size: 3.125rem;
+  font-weight: 500;
+  line-height: 100%;
+  letter-spacing: -0.125rem;
+  text-align: center;
+}
+
+p {
+  color: $gray-700;
+}
+
+main {
+  width: 100%;
+  min-height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 1rem;
+  box-sizing: inherit;
+  position: relative;
+}
+
+.content-container {
+  display: flex;
+  justify-content: space-around;
+  width: 100%;
+  margin-bottom: 3rem;
+}
+
+.content h1 {
+  margin-top: 1.75rem;
+}
+
+.content p {
+  margin-top: 1.5rem;
+}
+
+.content {
+  width: 900px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.divider {
+  width: 1px;
+  background: $red-to-pink-to-purple-vertical-gradient;
+  margin-inline: 0.5rem;
+}
+
+form .button-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 24px;
+}
+
+.form-element {
+  width: 400px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.effective-rate {
+  color: #d8f24e;
+  text-align: center;
+}
+
+@media screen and (max-width: 650px) {
+  .divider {
+    height: 1px;
+    width: 100%;
+    background: $red-to-pink-to-purple-horizontal-gradient;
+    margin-block: 1.5rem;
+  }
+}
+
+.calculator-section {
+  margin-top: 1.25rem;
+}
+
+.input-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin-top: 0.5rem;
+}
+
+.result-box {
+  margin-top: 1rem;
+  padding: 24px;
+  border: 1px solid #eee;
+  border-radius: 6px;
+}
+
+.table-wrap {
+  overflow: auto;
+  margin-top: 0.5rem;
+}
+
+.headline-figs span {
+  font-weight: bold;
+}
+
+table.calculator-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+table.calculator-table th,
+table.calculator-table td {
+  padding: 8px;
+  border-bottom: 1px solid #f5f5f5;
+}
+
+.inline-details {
+  display: block;
+}
+
+.inline-summary {
+  list-style: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0;
+  margin: 0;
+  font-weight: 600;
+  color: #e2e0e0;
+  background: transparent;
+  border: 0;
+  font: inherit;
+}
+
+.inline-summary .arrow {
+  display: inline-block;
+  transition: transform 0.15s ease;
+}
+
+.inline-details[open] .inline-summary .arrow {
+  transform: rotate(90deg);
+}
+
+.breakdown-inline {
+  margin-top: 0.5rem;
+}
+
+.full-width-breakdown {
+  margin-top: 0.75rem;
+  width: 100%;
+}
+
+.full-width-breakdown h4 {
+  margin: 0 0 0.5rem 0;
+}
+
+table.calculator-table th {
+  border-bottom: 1px solid #ddd;
+  text-align: left;
+}
+</style>
