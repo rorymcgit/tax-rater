@@ -1,8 +1,11 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { calculateIncomeTax } from './calculators/income-tax'
+import type { Region } from './calculators/income-tax'
 import { calculateNationalInsurance } from './calculators/national-insurance'
 import type { Breakdown } from './types/tax'
+
+type Frequency = 'annual' | 'monthly' | 'weekly'
 
 interface HeadlineFigure {
   label: string
@@ -21,7 +24,8 @@ interface CalculationResult {
 
 const title = 'Tax Calculator'
 const income = ref('')
-const result = ref<CalculationResult | null>(null)
+const region = ref<Region>('england')
+const frequency = ref<Frequency>('annual')
 const incomeTaxExpanded = ref(false)
 const nationalInsuranceExpanded = ref(false)
 
@@ -92,24 +96,28 @@ function breakdownHeadlineFigures(incomeVal: number, incomeTax: number, national
   ]
 }
 
-function calculate(): void {
-  const incomeVal = getIncome()
-  if (incomeVal === 0) {
-    return
-  }
+function toAnnual(value: number, freq: Frequency): number {
+  if (freq === 'monthly') return value * 12
+  if (freq === 'weekly') return value * 52
+  return value
+}
 
-  const incomeTax = calculateIncomeTax(incomeVal)
+const result = computed<CalculationResult | null>(() => {
+  const inputIncome = getIncome()
+  if (inputIncome === 0) return null
+
+  const incomeVal = toAnnual(inputIncome, frequency.value)
+  const incomeTax = calculateIncomeTax(incomeVal, region.value)
   const nationalInsurance = calculateNationalInsurance(incomeVal)
-
   const effectiveRate = (incomeTax.tax + nationalInsurance.tax) / incomeVal * 100
 
-  result.value = {
+  return {
     effectiveRate,
     headlineFigures: breakdownHeadlineFigures(incomeVal, incomeTax.tax, nationalInsurance.tax),
     incomeTaxBreakdown: incomeTax.breakdown,
     nationalInsuranceBreakdown: nationalInsurance.breakdown,
   }
-}
+})
 
 function formatWithCommas(value: string): string {
   if (!value) {
@@ -148,34 +156,33 @@ function getIncome(): number {
         <h1>{{ title }}</h1>
 
         <div class="form-element">
-          <label for="country-select">Residence: </label>
-          <select name="country" id="country-select">
-            <option value="uk">UK</option>
+          <label for="region-select">Region: </label>
+          <select v-model="region" id="region-select">
+            <option value="england">England, Wales &amp; NI</option>
+            <option value="scotland">Scotland</option>
           </select>
         </div>
 
-        <form @submit.prevent="calculate" novalidate>
-          <div class="form-element">
-            <label for="income">Income: </label>
-            <div class="input-row">
-              <span>£</span>
-              <input
-                id="income"
-                type="text"
-                inputmode="decimal"
-                autocomplete="off"
-                :value="income"
-                placeholder="Enter annual income..."
-                @input="formatIncomeInput"
-              />
-            </div>
+        <div class="form-element">
+          <label for="income">Income: </label>
+          <div class="input-row">
+            <span>£</span>
+            <input
+              id="income"
+              type="text"
+              inputmode="decimal"
+              autocomplete="off"
+              :value="income"
+              :placeholder="`Enter ${frequency} income...`"
+              @input="formatIncomeInput"
+            />
+            <select v-model="frequency" aria-label="Income frequency">
+              <option value="annual">/ year</option>
+              <option value="monthly">/ month</option>
+              <option value="weekly">/ week</option>
+            </select>
           </div>
-          <div class="button-container">
-            <button type="submit">
-              Calculate
-            </button>
-          </div>
-        </form>
+        </div>
 
         <section class="calculator-section">
           <div v-if="result" class="result-box">
