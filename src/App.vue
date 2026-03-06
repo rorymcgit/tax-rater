@@ -3,11 +3,14 @@ import { ref, computed } from "vue";
 import { calculateIncomeTax } from "./calculators/income-tax";
 import type { Region } from "./calculators/income-tax";
 import { calculateNationalInsurance } from "./calculators/national-insurance";
+import { calculateSelfEmployedNI } from "./calculators/national-insurance-self-employed";
+import type { SelfEmployedNI } from "./calculators/national-insurance-self-employed";
 import { calculateStudentLoan } from "./calculators/student-loan";
 import type { StudentLoanPlan } from "./calculators/student-loan";
 import type { Breakdown } from "./types/tax";
 
 type Frequency = "annual" | "monthly" | "weekly";
+type EmploymentType = "employed" | "self-employed";
 
 interface HeadlineFigure {
   label: string;
@@ -21,7 +24,7 @@ interface CalculationResult {
   effectiveRate: number;
   headlineFigures: HeadlineFigure[];
   incomeTaxBreakdown: Breakdown[];
-  nationalInsuranceBreakdown: Breakdown[];
+  nicBreakdown: Breakdown[];
 }
 
 type PensionType = "none" | "salary-sacrifice" | "relief-at-source";
@@ -31,6 +34,7 @@ const title = "Tax Calculator";
 const income = ref("");
 const region = ref<Region>("england");
 const frequency = ref<Frequency>("annual");
+const employmentType = ref<EmploymentType>("employed");
 const pensionType = ref<PensionType>("none");
 const pensionMode = ref<PensionMode>("percent");
 const pensionInput = ref("");
@@ -92,6 +96,7 @@ function breakdownHeadlineFigures(
   nationalInsurance: number,
   pensionAmount = 0,
   studentLoanRepayment = 0,
+  nicLabel = "National Insurance",
 ): HeadlineFigure[] {
   const figures: HeadlineFigure[] = [
     { label: "Gross Income", ...getFigsByFrequency(incomeVal) },
@@ -103,7 +108,7 @@ function breakdownHeadlineFigures(
 
   figures.push(
     { label: "Income Tax", ...getFigsByFrequency(incomeTax) },
-    { label: "National Insurance", ...getFigsByFrequency(nationalInsurance) },
+    { label: nicLabel, ...getFigsByFrequency(nationalInsurance) },
   );
 
   if (studentLoanRepayment > 0) {
@@ -133,6 +138,13 @@ function toAnnual(value: number, freq: Frequency): number {
   return value;
 }
 
+const incomePlaceholder = computed<string>(() => {
+  if (employmentType.value === 'self-employed') {
+    return 'Enter annual profit...'
+  }
+  return `Enter ${frequency.value} income...`
+})
+
 const result = computed<CalculationResult | null>(() => {
   const inputIncome = getIncome();
   if (inputIncome === 0) return null;
@@ -147,6 +159,27 @@ const result = computed<CalculationResult | null>(() => {
     pensionType.value === "salary-sacrifice" ? taxableIncome : annualGross;
 
   const incomeTax = calculateIncomeTax(taxableIncome, region.value);
+
+  if (employmentType.value === "self-employed") {
+    const selfEmployedNI: SelfEmployedNI = calculateSelfEmployedNI(taxableIncome);
+    const studentLoanRepayment = calculateStudentLoan(annualGross, studentLoanPlan.value);
+    const effectiveRate = (incomeTax.tax + selfEmployedNI.total) / annualGross * 100;
+
+    return {
+      effectiveRate,
+      headlineFigures: breakdownHeadlineFigures(
+        annualGross,
+        incomeTax.tax,
+        selfEmployedNI.total,
+        pensionAmount,
+        studentLoanRepayment,
+        "National Insurance (Self-Employed)",
+      ),
+      incomeTaxBreakdown: incomeTax.breakdown,
+      nicBreakdown: selfEmployedNI.breakdown,
+    };
+  }
+
   const nationalInsurance = calculateNationalInsurance(nicIncome);
   const studentLoanRepayment = calculateStudentLoan(annualGross, studentLoanPlan.value);
 
@@ -164,7 +197,7 @@ const result = computed<CalculationResult | null>(() => {
       studentLoanRepayment,
     ),
     incomeTaxBreakdown: incomeTax.breakdown,
-    nationalInsuranceBreakdown: nationalInsurance.breakdown,
+    nicBreakdown: nationalInsurance.breakdown,
   };
 });
 
@@ -207,6 +240,18 @@ function getIncome(): number {
         <h1>{{ title }}</h1>
 
         <div class="form-element">
+          <label>Employment: </label>
+          <div class="input-row">
+            <label class="radio-label">
+              <input type="radio" v-model="employmentType" value="employed" /> Employed
+            </label>
+            <label class="radio-label">
+              <input type="radio" v-model="employmentType" value="self-employed" /> Self-employed
+            </label>
+          </div>
+        </div>
+
+        <div class="form-element">
           <label for="region-select">Region: </label>
           <select v-model="region" id="region-select">
             <option value="england">England, Wales &amp; NI</option>
@@ -224,7 +269,7 @@ function getIncome(): number {
               inputmode="decimal"
               autocomplete="off"
               :value="income"
-              :placeholder="`Enter ${frequency} income...`"
+              :placeholder="incomePlaceholder"
               @input="formatIncomeInput"
             />
             <select v-model="frequency" aria-label="Income frequency">
@@ -310,7 +355,7 @@ function getIncome(): number {
                         {{ fig.label }}
                       </button>
                       <button
-                        v-else-if="fig.label === 'National Insurance'"
+                        v-else-if="fig.label.startsWith('National Insurance')"
                         class="inline-summary"
                         type="button"
                         @click="toggleNationalInsuranceExpanded"
@@ -371,10 +416,7 @@ function getIncome(): number {
                     </tr>
                   </thead>
                   <tbody>
-                    <tr
-                      v-for="b in result.nationalInsuranceBreakdown"
-                      :key="b.band"
-                    >
+                    <tr v-for="b in result.nicBreakdown" :key="b.band">
                       <td>{{ b.band }}</td>
                       <td>£{{ formatCurrency(b.taxable) }}</td>
                       <td>£{{ formatCurrency(b.tax) }}</td>
@@ -577,5 +619,12 @@ table.calculator-table td {
 table.calculator-table th {
   border-bottom: 1px solid #ddd;
   text-align: left;
+}
+
+.radio-label {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  cursor: pointer;
 }
 </style>
