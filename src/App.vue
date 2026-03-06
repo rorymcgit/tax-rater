@@ -22,12 +22,25 @@ interface CalculationResult {
   nationalInsuranceBreakdown: Breakdown[]
 }
 
+type PensionType = 'none' | 'salary-sacrifice' | 'relief-at-source'
+type PensionMode = 'percent' | 'amount'
+
 const title = 'Tax Calculator'
 const income = ref('')
 const region = ref<Region>('england')
 const frequency = ref<Frequency>('annual')
+const pensionType = ref<PensionType>('none')
+const pensionMode = ref<PensionMode>('percent')
+const pensionInput = ref('')
 const incomeTaxExpanded = ref(false)
 const nationalInsuranceExpanded = ref(false)
+
+function getPensionAmount(annualGross: number): number {
+  if (pensionType.value === 'none') return 0
+  const val = Number(pensionInput.value) || 0
+  const amount = pensionMode.value === 'percent' ? annualGross * (val / 100) : val
+  return Math.min(amount, annualGross)
+}
 
 function formatCurrency(value: number): string {
   return value.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -66,34 +79,22 @@ function getFigsByFrequency(fig: number): Omit<HeadlineFigure, 'label'> {
   }
 }
 
-function breakdownHeadlineFigures(incomeVal: number, incomeTax: number, nationalInsurance: number): HeadlineFigure[] {
-  const incomeHeadline: HeadlineFigure = {
-    label: 'Gross Income',
-    ...getFigsByFrequency(incomeVal),
-  }
-
-  const incomeTaxHeadline: HeadlineFigure = {
-    label: 'Income Tax',
-    ...getFigsByFrequency(incomeTax),
-  }
-
-  const nationalInsuranceHeadline: HeadlineFigure = {
-    label: 'National Insurance',
-    ...getFigsByFrequency(nationalInsurance),
-  }
-
-  const takeHome = incomeVal - incomeTax - nationalInsurance
-  const takeHomeHeadline: HeadlineFigure = {
-    label: 'Take Home',
-    ...getFigsByFrequency(takeHome)
-  }
-
-  return [
-    incomeHeadline,
-    incomeTaxHeadline,
-    nationalInsuranceHeadline,
-    takeHomeHeadline,
+function breakdownHeadlineFigures(incomeVal: number, incomeTax: number, nationalInsurance: number, pensionAmount = 0): HeadlineFigure[] {
+  const figures: HeadlineFigure[] = [
+    { label: 'Gross Income', ...getFigsByFrequency(incomeVal) },
   ]
+
+  if (pensionAmount > 0) {
+    figures.push({ label: 'Pension', ...getFigsByFrequency(pensionAmount) })
+  }
+
+  figures.push(
+    { label: 'Income Tax', ...getFigsByFrequency(incomeTax) },
+    { label: 'National Insurance', ...getFigsByFrequency(nationalInsurance) },
+    { label: 'Take Home', ...getFigsByFrequency(incomeVal - pensionAmount - incomeTax - nationalInsurance) },
+  )
+
+  return figures
 }
 
 function toAnnual(value: number, freq: Frequency): number {
@@ -106,14 +107,21 @@ const result = computed<CalculationResult | null>(() => {
   const inputIncome = getIncome()
   if (inputIncome === 0) return null
 
-  const incomeVal = toAnnual(inputIncome, frequency.value)
-  const incomeTax = calculateIncomeTax(incomeVal, region.value)
-  const nationalInsurance = calculateNationalInsurance(incomeVal)
-  const effectiveRate = (incomeTax.tax + nationalInsurance.tax) / incomeVal * 100
+  const annualGross = toAnnual(inputIncome, frequency.value)
+  const pensionAmount = getPensionAmount(annualGross)
+
+  // Salary sacrifice reduces income before both tax and NICs.
+  // Personal/relief-at-source reduces taxable income only; NICs use full gross.
+  const taxableIncome = annualGross - pensionAmount
+  const nicIncome = pensionType.value === 'salary-sacrifice' ? taxableIncome : annualGross
+
+  const incomeTax = calculateIncomeTax(taxableIncome, region.value)
+  const nationalInsurance = calculateNationalInsurance(nicIncome)
+  const effectiveRate = (incomeTax.tax + nationalInsurance.tax) / annualGross * 100
 
   return {
     effectiveRate,
-    headlineFigures: breakdownHeadlineFigures(incomeVal, incomeTax.tax, nationalInsurance.tax),
+    headlineFigures: breakdownHeadlineFigures(annualGross, incomeTax.tax, nationalInsurance.tax, pensionAmount),
     incomeTaxBreakdown: incomeTax.breakdown,
     nationalInsuranceBreakdown: nationalInsurance.breakdown,
   }
@@ -180,6 +188,36 @@ function getIncome(): number {
               <option value="annual">/ year</option>
               <option value="monthly">/ month</option>
               <option value="weekly">/ week</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-element">
+          <label for="pension-type">Pension: </label>
+          <select v-model="pensionType" id="pension-type">
+            <option value="none">None</option>
+            <option value="salary-sacrifice">Salary Sacrifice</option>
+            <option value="relief-at-source">Personal / Relief at Source</option>
+          </select>
+        </div>
+
+        <div v-if="pensionType !== 'none'" class="form-element">
+          <label for="pension-amount">Amount: </label>
+          <div class="input-row">
+            <span v-if="pensionMode === 'amount'">£</span>
+            <input
+              id="pension-amount"
+              type="number"
+              inputmode="decimal"
+              min="0"
+              :max="pensionMode === 'percent' ? 100 : undefined"
+              step="0.01"
+              v-model="pensionInput"
+              placeholder="0"
+            />
+            <select v-model="pensionMode" aria-label="Pension contribution unit">
+              <option value="percent">%</option>
+              <option value="amount">£</option>
             </select>
           </div>
         </div>
