@@ -9,14 +9,14 @@ Small UX changes with outsized impact on usefulness.
 
 ---
 
-## Slice B — Pension contributions
+## Slice B — Pension contributions ✅
 Pension is one of the most commonly asked-about deductions. Salary sacrifice also reduces NICs.
 
-- [ ] Add pension contribution input (% or £ amount)
-- [ ] Support two modes:
+- [x] Add pension contribution input (% or £ amount)
+- [x] Support two modes:
   - **Salary sacrifice** — reduces gross income before tax *and* NICs
   - **Personal/relief at source** — reduces taxable income only (not NICs)
-- [ ] Show pension contribution as a line in the headline figures table
+- [x] Show pension contribution as a line in the headline figures table
 
 ---
 
