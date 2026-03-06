@@ -20,17 +20,17 @@ Pension is one of the most commonly asked-about deductions. Salary sacrifice als
 
 ---
 
-## Slice C — Student loan repayments
+## Slice C — Student loan repayments ✅
 A very large proportion of UK workers have student loans. Each plan has different thresholds.
 
-- [ ] Add student loan plan selector (None / Plan 1 / Plan 2 / Plan 4 / Plan 5 / Postgraduate)
-- [ ] Implement repayment calculation per plan:
+- [x] Add student loan plan selector (None / Plan 1 / Plan 2 / Plan 4 / Plan 5 / Postgraduate)
+- [x] Implement repayment calculation per plan:
   - Plan 1: 9% above £24,990
   - Plan 2: 9% above £27,295
   - Plan 4 (Scotland): 9% above £31,395
   - Plan 5: 9% above £25,000
   - Postgraduate: 6% above £21,000
-- [ ] Show student loan repayment as a line in the headline figures table
+- [x] Show student loan repayment as a line in the headline figures table
 
 ---
 

@@ -3,6 +3,8 @@ import { ref, computed } from 'vue'
 import { calculateIncomeTax } from './calculators/income-tax'
 import type { Region } from './calculators/income-tax'
 import { calculateNationalInsurance } from './calculators/national-insurance'
+import { calculateStudentLoan } from './calculators/student-loan'
+import type { StudentLoanPlan } from './calculators/student-loan'
 import type { Breakdown } from './types/tax'
 
 type Frequency = 'annual' | 'monthly' | 'weekly'
@@ -32,6 +34,7 @@ const frequency = ref<Frequency>('annual')
 const pensionType = ref<PensionType>('none')
 const pensionMode = ref<PensionMode>('percent')
 const pensionInput = ref('')
+const studentLoanPlan = ref<StudentLoanPlan>('none')
 const incomeTaxExpanded = ref(false)
 const nationalInsuranceExpanded = ref(false)
 
@@ -79,7 +82,7 @@ function getFigsByFrequency(fig: number): Omit<HeadlineFigure, 'label'> {
   }
 }
 
-function breakdownHeadlineFigures(incomeVal: number, incomeTax: number, nationalInsurance: number, pensionAmount = 0): HeadlineFigure[] {
+function breakdownHeadlineFigures(incomeVal: number, incomeTax: number, nationalInsurance: number, pensionAmount = 0, studentLoanRepayment = 0): HeadlineFigure[] {
   const figures: HeadlineFigure[] = [
     { label: 'Gross Income', ...getFigsByFrequency(incomeVal) },
   ]
@@ -91,7 +94,14 @@ function breakdownHeadlineFigures(incomeVal: number, incomeTax: number, national
   figures.push(
     { label: 'Income Tax', ...getFigsByFrequency(incomeTax) },
     { label: 'National Insurance', ...getFigsByFrequency(nationalInsurance) },
-    { label: 'Take Home', ...getFigsByFrequency(incomeVal - pensionAmount - incomeTax - nationalInsurance) },
+  )
+
+  if (studentLoanRepayment > 0) {
+    figures.push({ label: 'Student Loan', ...getFigsByFrequency(studentLoanRepayment) })
+  }
+
+  figures.push(
+    { label: 'Take Home', ...getFigsByFrequency(incomeVal - pensionAmount - incomeTax - nationalInsurance - studentLoanRepayment) },
   )
 
   return figures
@@ -117,11 +127,12 @@ const result = computed<CalculationResult | null>(() => {
 
   const incomeTax = calculateIncomeTax(taxableIncome, region.value)
   const nationalInsurance = calculateNationalInsurance(nicIncome)
+  const studentLoanRepayment = calculateStudentLoan(annualGross, studentLoanPlan.value)
   const effectiveRate = (incomeTax.tax + nationalInsurance.tax) / annualGross * 100
 
   return {
     effectiveRate,
-    headlineFigures: breakdownHeadlineFigures(annualGross, incomeTax.tax, nationalInsurance.tax, pensionAmount),
+    headlineFigures: breakdownHeadlineFigures(annualGross, incomeTax.tax, nationalInsurance.tax, pensionAmount, studentLoanRepayment),
     incomeTaxBreakdown: incomeTax.breakdown,
     nationalInsuranceBreakdown: nationalInsurance.breakdown,
   }
@@ -220,6 +231,18 @@ function getIncome(): number {
               <option value="amount">£</option>
             </select>
           </div>
+        </div>
+
+        <div class="form-element">
+          <label for="student-loan-plan">Student Loan: </label>
+          <select v-model="studentLoanPlan" id="student-loan-plan">
+            <option value="none">None</option>
+            <option value="plan1">Plan 1</option>
+            <option value="plan2">Plan 2</option>
+            <option value="plan4">Plan 4 (Scotland)</option>
+            <option value="plan5">Plan 5</option>
+            <option value="postgraduate">Postgraduate</option>
+          </select>
         </div>
 
         <section class="calculator-section">
