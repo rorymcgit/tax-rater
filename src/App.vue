@@ -7,7 +7,9 @@ import { calculateSelfEmployedNI } from "./calculators/national-insurance-self-e
 import type { SelfEmployedNI } from "./calculators/national-insurance-self-employed";
 import { calculateStudentLoan } from "./calculators/student-loan";
 import type { StudentLoanPlan } from "./calculators/student-loan";
-import type { Breakdown } from "./types/tax";
+import { calculateEmployerNationalInsurance } from "./calculators/employer-national-insurance";
+import { calculateDividendTax } from "./calculators/dividend-tax";
+import type { Breakdown, Tax } from "./types/tax";
 
 type Frequency = "annual" | "monthly" | "weekly";
 type EmploymentType = "employed" | "self-employed";
@@ -25,6 +27,7 @@ interface CalculationResult {
   headlineFigures: HeadlineFigure[];
   incomeTaxBreakdown: Breakdown[];
   nicBreakdown: Breakdown[];
+  dividendTaxBreakdown: Breakdown[];
 }
 
 type PensionType = "none" | "salary-sacrifice" | "relief-at-source";
@@ -39,8 +42,11 @@ const pensionType = ref<PensionType>("none");
 const pensionMode = ref<PensionMode>("percent");
 const pensionInput = ref("");
 const studentLoanPlan = ref<StudentLoanPlan>("none");
+const dividendIncome = ref("");
 const incomeTaxExpanded = ref(false);
 const nationalInsuranceExpanded = ref(false);
+const dividendTaxExpanded = ref(false);
+const showEmployerNICs = ref(false);
 
 function getPensionAmount(annualGross: number): number {
   if (pensionType.value === "none") return 0;
@@ -59,12 +65,20 @@ function formatCurrency(value: number): string {
 
 function toggleNationalInsuranceExpanded(): void {
   incomeTaxExpanded.value = false;
+  dividendTaxExpanded.value = false;
   nationalInsuranceExpanded.value = !nationalInsuranceExpanded.value;
 }
 
 function toggleIncomeTaxExpanded(): void {
   nationalInsuranceExpanded.value = false;
+  dividendTaxExpanded.value = false;
   incomeTaxExpanded.value = !incomeTaxExpanded.value;
+}
+
+function toggleDividendTaxExpanded(): void {
+  incomeTaxExpanded.value = false;
+  nationalInsuranceExpanded.value = false;
+  dividendTaxExpanded.value = !dividendTaxExpanded.value;
 }
 
 function formatIncomeInput(event: Event): void {
@@ -75,6 +89,19 @@ function formatIncomeInput(event: Event): void {
   income.value = formatted;
 
   // Update the native input if formatting changed (keeps caret simple by moving to end)
+  if (input.value !== formatted) {
+    input.value = formatted;
+    input.setSelectionRange(formatted.length, formatted.length);
+  }
+}
+
+function formatDividendInput(event: Event): void {
+  const input = event.target as HTMLInputElement;
+  const raw = input.value || "";
+  const formatted = formatWithCommas(raw);
+
+  dividendIncome.value = formatted;
+
   if (input.value !== formatted) {
     input.value = formatted;
     input.setSelectionRange(formatted.length, formatted.length);
@@ -97,9 +124,14 @@ function breakdownHeadlineFigures(
   pensionAmount = 0,
   studentLoanRepayment = 0,
   nicLabel = "National Insurance",
+  dividendTax = 0,
+  dividendIncomeVal = 0,
 ): HeadlineFigure[] {
   const figures: HeadlineFigure[] = [
-    { label: "Gross Income", ...getFigsByFrequency(incomeVal) },
+    {
+      label: "Gross Income",
+      ...getFigsByFrequency(incomeVal + dividendIncomeVal),
+    },
   ];
 
   if (pensionAmount > 0) {
@@ -111,6 +143,13 @@ function breakdownHeadlineFigures(
     { label: nicLabel, ...getFigsByFrequency(nationalInsurance) },
   );
 
+  if (dividendTax > 0) {
+    figures.push({
+      label: "Dividend Tax",
+      ...getFigsByFrequency(dividendTax),
+    });
+  }
+
   if (studentLoanRepayment > 0) {
     figures.push({
       label: "Student Loan",
@@ -121,10 +160,12 @@ function breakdownHeadlineFigures(
   figures.push({
     label: "Take Home",
     ...getFigsByFrequency(
-      incomeVal -
+      incomeVal +
+        dividendIncomeVal -
         pensionAmount -
         incomeTax -
         nationalInsurance -
+        dividendTax -
         studentLoanRepayment,
     ),
   });
@@ -150,6 +191,7 @@ const result = computed<CalculationResult | null>(() => {
   if (inputIncome === 0) return null;
 
   const annualGross = toAnnual(inputIncome, frequency.value);
+  const annualDividends = getDividendIncome();
   const pensionAmount = getPensionAmount(annualGross);
 
   // Salary sacrifice reduces income before both tax and NICs.
@@ -159,11 +201,23 @@ const result = computed<CalculationResult | null>(() => {
     pensionType.value === "salary-sacrifice" ? taxableIncome : annualGross;
 
   const incomeTax = calculateIncomeTax(taxableIncome, region.value);
+  const dividendTax = calculateDividendTax(
+    annualDividends,
+    taxableIncome,
+    region.value,
+  );
 
   if (employmentType.value === "self-employed") {
-    const selfEmployedNI: SelfEmployedNI = calculateSelfEmployedNI(taxableIncome);
-    const studentLoanRepayment = calculateStudentLoan(annualGross, studentLoanPlan.value);
-    const effectiveRate = (incomeTax.tax + selfEmployedNI.total) / annualGross * 100;
+    const selfEmployedNI: SelfEmployedNI =
+      calculateSelfEmployedNI(taxableIncome);
+    const studentLoanRepayment = calculateStudentLoan(
+      annualGross,
+      studentLoanPlan.value,
+    );
+    const effectiveRate =
+      ((incomeTax.tax + selfEmployedNI.total + dividendTax.tax) /
+        (annualGross + annualDividends)) *
+      100;
 
     return {
       effectiveRate,
@@ -174,18 +228,27 @@ const result = computed<CalculationResult | null>(() => {
         pensionAmount,
         studentLoanRepayment,
         "National Insurance (Self-Employed)",
+        dividendTax.tax,
+        annualDividends,
       ),
       incomeTaxBreakdown: incomeTax.breakdown,
       nicBreakdown: selfEmployedNI.breakdown,
+      dividendTaxBreakdown: dividendTax.breakdown,
     };
   }
 
   const nationalInsurance = calculateNationalInsurance(nicIncome);
-  const studentLoanRepayment = calculateStudentLoan(annualGross, studentLoanPlan.value);
+  const studentLoanRepayment = calculateStudentLoan(
+    annualGross,
+    studentLoanPlan.value,
+  );
 
   // TODO change to effective TAKE HOME rate, i.e. invert and include pension, student loan + employer NICS
   // Be explicit in the UI about what this shows and show the formula
-  const effectiveRate = (incomeTax.tax + nationalInsurance.tax) / annualGross * 100;
+  const effectiveRate =
+    ((incomeTax.tax + nationalInsurance.tax + dividendTax.tax) /
+      (annualGross + annualDividends)) *
+    100;
 
   return {
     effectiveRate,
@@ -195,10 +258,29 @@ const result = computed<CalculationResult | null>(() => {
       nationalInsurance.tax,
       pensionAmount,
       studentLoanRepayment,
+      "National Insurance",
+      dividendTax.tax,
+      annualDividends,
     ),
     incomeTaxBreakdown: incomeTax.breakdown,
     nicBreakdown: nationalInsurance.breakdown,
+    dividendTaxBreakdown: dividendTax.breakdown,
   };
+});
+
+const employerNICs = computed<Tax | null>(() => {
+  if (!showEmployerNICs.value || employmentType.value === "self-employed") {
+    return null;
+  }
+  const inputIncome = getIncome();
+  if (inputIncome === 0) return null;
+  const annualGross = toAnnual(inputIncome, frequency.value);
+  // Salary sacrifice reduces the employer NIC base (same as employee NIC base)
+  const nicIncome =
+    pensionType.value === "salary-sacrifice"
+      ? annualGross - getPensionAmount(annualGross)
+      : annualGross;
+  return calculateEmployerNationalInsurance(nicIncome);
 });
 
 function formatWithCommas(value: string): string {
@@ -226,6 +308,14 @@ function formatWithCommas(value: string): string {
 
 function getIncome(): number {
   const raw = income.value || "";
+  const numericString = String(raw)
+    .replace(/,/g, "")
+    .replace(/[^0-9.]/g, "");
+  return Number(numericString) || 0;
+}
+
+function getDividendIncome(): number {
+  const raw = dividendIncome.value || "";
   const numericString = String(raw)
     .replace(/,/g, "")
     .replace(/[^0-9.]/g, "");
@@ -327,6 +417,34 @@ function getIncome(): number {
           </select>
         </div>
 
+        <div class="form-element">
+          <label for="dividend-income">Dividends: </label>
+          <div class="input-row">
+            <span>£</span>
+            <input
+              id="dividend-income"
+              type="text"
+              inputmode="decimal"
+              autocomplete="off"
+              :value="dividendIncome"
+              placeholder="Annual dividend income..."
+              @input="formatDividendInput"
+            />
+          </div>
+        </div>
+
+        <div v-if="employmentType === 'employed'" class="form-element">
+          <label for="show-employer-nics">Employer NICs: </label>
+          <label class="toggle-label">
+            <input
+              id="show-employer-nics"
+              type="checkbox"
+              v-model="showEmployerNICs"
+            />
+            Show employer cost
+          </label>
+        </div>
+
         <section class="calculator-section">
           <div v-if="result" class="result-box">
             <div class="table-wrap">
@@ -362,6 +480,17 @@ function getIncome(): number {
                       >
                         <span class="arrow">{{
                           nationalInsuranceExpanded ? "▾" : "▸"
+                        }}</span>
+                        {{ fig.label }}
+                      </button>
+                      <button
+                        v-else-if="fig.label === 'Dividend Tax'"
+                        class="inline-summary"
+                        type="button"
+                        @click="toggleDividendTaxExpanded"
+                      >
+                        <span class="arrow">{{
+                          dividendTaxExpanded ? "▾" : "▸"
                         }}</span>
                         {{ fig.label }}
                       </button>
@@ -425,6 +554,63 @@ function getIncome(): number {
                 </table>
               </div>
             </template>
+
+            <template v-else-if="dividendTaxExpanded">
+              <h3>Dividend Tax - Breakdown by Band</h3>
+              <div class="table-wrap">
+                <table class="calculator-table">
+                  <thead>
+                    <tr>
+                      <th>Band</th>
+                      <th>Taxable Amount</th>
+                      <th>Tax Due</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr
+                      v-for="b in result.dividendTaxBreakdown"
+                      :key="b.band"
+                    >
+                      <td>{{ b.band }}</td>
+                      <td>£{{ formatCurrency(b.taxable) }}</td>
+                      <td>£{{ formatCurrency(b.tax) }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </template>
+          </div>
+
+          <div v-if="employerNICs" class="result-box employer-nics-box">
+            <h3 class="employer-nics-heading">
+              Employer Cost (not your deduction)
+            </h3>
+            <p class="employer-nics-note">
+              This is what your employer pays on top of your salary. It is not
+              deducted from your take-home pay.
+            </p>
+            <div class="table-wrap">
+              <table class="calculator-table">
+                <thead>
+                  <tr>
+                    <th></th>
+                    <th>Annually</th>
+                    <th>Monthly</th>
+                    <th>Weekly</th>
+                    <th>Daily</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Employer NICs</td>
+                    <td>£{{ formatCurrency(employerNICs.tax) }}</td>
+                    <td>£{{ formatCurrency(employerNICs.tax / 12) }}</td>
+                    <td>£{{ formatCurrency(employerNICs.tax / 52) }}</td>
+                    <td>£{{ formatCurrency(employerNICs.tax / 252) }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
         </section>
       </div>
@@ -626,5 +812,28 @@ table.calculator-table th {
   align-items: center;
   gap: 0.375rem;
   cursor: pointer;
+}
+
+.toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+
+.employer-nics-box {
+  margin-top: 1rem;
+  border-color: $gray-700;
+}
+
+.employer-nics-heading {
+  color: $gray-400;
+  margin: 0 0 0.25rem 0;
+}
+
+.employer-nics-note {
+  font-size: 0.875rem;
+  color: $gray-700;
+  margin: 0 0 0.75rem 0;
 }
 </style>
