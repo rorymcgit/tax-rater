@@ -4,6 +4,7 @@ import { calculateIncomeTax } from "./calculators/income-tax";
 import type { Region } from "./calculators/income-tax";
 import { calculateNationalInsurance } from "./calculators/national-insurance";
 import { calculateEmployerNationalInsurance } from "./calculators/employer-national-insurance";
+import type { EmployerNICCategory } from "./calculators/employer-national-insurance";
 import { calculateSelfEmployedNI } from "./calculators/national-insurance-self-employed";
 import type { SelfEmployedNI } from "./calculators/national-insurance-self-employed";
 import { calculateStudentLoan } from "./calculators/student-loan";
@@ -45,6 +46,7 @@ const pensionInput = ref("");
 const studentLoanPlan = ref<StudentLoanPlan>("none");
 const dividendIncome = ref("");
 const showEmployerNICs = ref(false);
+const employerNICCategory = ref<EmployerNICCategory>("A");
 const incomeTaxExpanded = ref(false);
 const nationalInsuranceExpanded = ref(false);
 const dividendTaxExpanded = ref(false);
@@ -254,7 +256,7 @@ const employerNICs = computed(() => {
   const annualGross = toAnnual(inputIncome, frequency.value);
   const pensionAmount = getPensionAmount(annualGross);
   const nicIncome = pensionType.value === "salary-sacrifice" ? annualGross - pensionAmount : annualGross;
-  return calculateEmployerNationalInsurance(nicIncome);
+  return calculateEmployerNationalInsurance(nicIncome, employerNICCategory.value);
 });
 
 function formatWithCommas(value: string): string {
@@ -402,6 +404,28 @@ function getIncome(): number {
         <div v-if="employmentType === 'employed'" class="form-element">
           <label for="show-employer-nics">Employer NICs: </label>
           <input type="checkbox" id="show-employer-nics" v-model="showEmployerNICs" />
+        </div>
+
+        <div v-if="showEmployerNICs && employmentType === 'employed'" class="form-element">
+          <label for="employer-nic-category">NIC Category: </label>
+          <select v-model="employerNICCategory" id="employer-nic-category">
+            <option value="A">A — Standard</option>
+            <option value="B">B — Married women / widows reduced rate</option>
+            <option value="C">C — State pension age or over</option>
+            <option value="D">D — Contracted-out salary related</option>
+            <option value="E">E — Contracted-out salary related (reduced)</option>
+            <option value="F">F — Contracted-out money purchase</option>
+            <option value="H">H — Apprentice under 25</option>
+            <option value="I">I — Contracted-out money purchase (reduced)</option>
+            <option value="J">J — Deferred NIC</option>
+            <option value="K">K — Contracted-out salary related (deferred)</option>
+            <option value="L">L — Contracted-out money purchase (deferred)</option>
+            <option value="M">M — Under 21</option>
+            <option value="N">N — Under 21 (deferred)</option>
+            <option value="S">S — Scottish taxpayer, deferred</option>
+            <option value="V">V — Veteran, first year of civilian employment</option>
+            <option value="Z">Z — Under 21, deferred NIC</option>
+          </select>
         </div>
 
         <section class="calculator-section">
