@@ -34,14 +34,14 @@ A very large proportion of UK workers have student loans. Each plan has differen
 
 ---
 
-## Slice D — Self-employed / sole trader mode
+## Slice D — Self-employed / sole trader mode ✅
 Noted as a TODO in `national-insurance.ts`. Opens up a whole new audience.
 
-- [ ] Add employment type toggle (Employed / Self-employed)
-- [ ] For self-employed: replace Class 1 NICs with Class 2 + Class 4
+- [x] Add employment type toggle (Employed / Self-employed)
+- [x] For self-employed: replace Class 1 NICs with Class 2 + Class 4
   - Class 2: £3.45/week flat rate if profits > £12,570
   - Class 4: 6% on £12,570–£50,270, 2% above £50,270
-- [ ] Self-employed users pay income tax on profit, not salary — update labelling accordingly
+- [x] Self-employed users pay income tax on profit, not salary — update labelling accordingly
 
 ---
 
