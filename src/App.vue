@@ -125,10 +125,13 @@ const result = computed<CalculationResult | null>(() => {
   const taxableIncome = annualGross - pensionAmount
   const nicIncome = pensionType.value === 'salary-sacrifice' ? taxableIncome : annualGross
 
-  const incomeTax = calculateIncomeTax(taxableIncome, region.value)
-  const nationalInsurance = calculateNationalInsurance(nicIncome)
-  const studentLoanRepayment = calculateStudentLoan(annualGross, studentLoanPlan.value)
-  const effectiveRate = (incomeTax.tax + nationalInsurance.tax) / annualGross * 100
+  const incomeTax = calculateIncomeTax(taxableIncome, region.value);
+  const nationalInsurance = calculateNationalInsurance(nicIncome);
+  const studentLoanRepayment = calculateStudentLoan(annualGross, studentLoanPlan.value);
+
+  // TODO change to effective TAKE HOME rate, i.e. invert and include pension, student loan + employer NICS
+  // Be explicit in the UI about what this shows and show the formula
+  const effectiveRate = (incomeTax.tax + nationalInsurance.tax) / annualGross * 100;
 
   return {
     effectiveRate,
