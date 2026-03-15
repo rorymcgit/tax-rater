@@ -1,170 +1,206 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { calculateIncomeTax } from './calculators/income-tax'
-import type { Region } from './calculators/income-tax'
-import { calculateNationalInsurance } from './calculators/national-insurance'
-import { calculateStudentLoan } from './calculators/student-loan'
-import type { StudentLoanPlan } from './calculators/student-loan'
-import type { Breakdown } from './types/tax'
+import { ref, computed } from "vue";
+import { calculateIncomeTax } from "./calculators/income-tax";
+import type { Region } from "./calculators/income-tax";
+import { calculateNationalInsurance } from "./calculators/national-insurance";
+import { calculateStudentLoan } from "./calculators/student-loan";
+import type { StudentLoanPlan } from "./calculators/student-loan";
+import type { Breakdown } from "./types/tax";
 
-type Frequency = 'annual' | 'monthly' | 'weekly'
+type Frequency = "annual" | "monthly" | "weekly";
 
 interface HeadlineFigure {
-  label: string
-  annual: number
-  month: number
-  week: number
-  day: number
+  label: string;
+  annual: number;
+  month: number;
+  week: number;
+  day: number;
 }
 
 interface CalculationResult {
-  effectiveRate: number
-  headlineFigures: HeadlineFigure[]
-  incomeTaxBreakdown: Breakdown[]
-  nationalInsuranceBreakdown: Breakdown[]
+  effectiveRate: number;
+  headlineFigures: HeadlineFigure[];
+  incomeTaxBreakdown: Breakdown[];
+  nationalInsuranceBreakdown: Breakdown[];
 }
 
-type PensionType = 'none' | 'salary-sacrifice' | 'relief-at-source'
-type PensionMode = 'percent' | 'amount'
+type PensionType = "none" | "salary-sacrifice" | "relief-at-source";
+type PensionMode = "percent" | "amount";
 
-const title = 'Tax Calculator'
-const income = ref('')
-const region = ref<Region>('england')
-const frequency = ref<Frequency>('annual')
-const pensionType = ref<PensionType>('none')
-const pensionMode = ref<PensionMode>('percent')
-const pensionInput = ref('')
-const studentLoanPlan = ref<StudentLoanPlan>('none')
-const incomeTaxExpanded = ref(false)
-const nationalInsuranceExpanded = ref(false)
+const title = "Tax Calculator";
+const income = ref("");
+const region = ref<Region>("england");
+const frequency = ref<Frequency>("annual");
+const pensionType = ref<PensionType>("none");
+const pensionMode = ref<PensionMode>("percent");
+const pensionInput = ref("");
+const studentLoanPlan = ref<StudentLoanPlan>("none");
+const incomeTaxExpanded = ref(false);
+const nationalInsuranceExpanded = ref(false);
 
 function getPensionAmount(annualGross: number): number {
-  if (pensionType.value === 'none') return 0
-  const val = Number(pensionInput.value) || 0
-  const amount = pensionMode.value === 'percent' ? annualGross * (val / 100) : val
-  return Math.min(amount, annualGross)
+  if (pensionType.value === "none") return 0;
+  const val = Number(pensionInput.value) || 0;
+  const amount =
+    pensionMode.value === "percent" ? annualGross * (val / 100) : val;
+  return Math.min(amount, annualGross);
 }
 
 function formatCurrency(value: number): string {
-  return value.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  return value.toLocaleString("en-GB", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
 }
 
 function toggleNationalInsuranceExpanded(): void {
-  incomeTaxExpanded.value = false
-  nationalInsuranceExpanded.value = !nationalInsuranceExpanded.value
+  incomeTaxExpanded.value = false;
+  nationalInsuranceExpanded.value = !nationalInsuranceExpanded.value;
 }
 
 function toggleIncomeTaxExpanded(): void {
-  nationalInsuranceExpanded.value = false
-  incomeTaxExpanded.value = !incomeTaxExpanded.value
+  nationalInsuranceExpanded.value = false;
+  incomeTaxExpanded.value = !incomeTaxExpanded.value;
 }
 
 function formatIncomeInput(event: Event): void {
-  const input = event.target as HTMLInputElement
-  const raw = input.value || ''
-  const formatted = formatWithCommas(raw)
+  const input = event.target as HTMLInputElement;
+  const raw = input.value || "";
+  const formatted = formatWithCommas(raw);
 
-  income.value = formatted
+  income.value = formatted;
 
   // Update the native input if formatting changed (keeps caret simple by moving to end)
   if (input.value !== formatted) {
-    input.value = formatted
-    input.setSelectionRange(formatted.length, formatted.length)
+    input.value = formatted;
+    input.setSelectionRange(formatted.length, formatted.length);
   }
 }
 
-function getFigsByFrequency(fig: number): Omit<HeadlineFigure, 'label'> {
+function getFigsByFrequency(fig: number): Omit<HeadlineFigure, "label"> {
   return {
     annual: fig,
     month: fig / 12,
     week: fig / 52,
     day: fig / 252,
-  }
+  };
 }
 
-function breakdownHeadlineFigures(incomeVal: number, incomeTax: number, nationalInsurance: number, pensionAmount = 0, studentLoanRepayment = 0): HeadlineFigure[] {
+function breakdownHeadlineFigures(
+  incomeVal: number,
+  incomeTax: number,
+  nationalInsurance: number,
+  pensionAmount = 0,
+  studentLoanRepayment = 0,
+): HeadlineFigure[] {
   const figures: HeadlineFigure[] = [
-    { label: 'Gross Income', ...getFigsByFrequency(incomeVal) },
-  ]
+    { label: "Gross Income", ...getFigsByFrequency(incomeVal) },
+  ];
 
   if (pensionAmount > 0) {
-    figures.push({ label: 'Pension', ...getFigsByFrequency(pensionAmount) })
+    figures.push({ label: "Pension", ...getFigsByFrequency(pensionAmount) });
   }
 
   figures.push(
-    { label: 'Income Tax', ...getFigsByFrequency(incomeTax) },
-    { label: 'National Insurance', ...getFigsByFrequency(nationalInsurance) },
-  )
+    { label: "Income Tax", ...getFigsByFrequency(incomeTax) },
+    { label: "National Insurance", ...getFigsByFrequency(nationalInsurance) },
+  );
 
   if (studentLoanRepayment > 0) {
-    figures.push({ label: 'Student Loan', ...getFigsByFrequency(studentLoanRepayment) })
+    figures.push({
+      label: "Student Loan",
+      ...getFigsByFrequency(studentLoanRepayment),
+    });
   }
 
-  figures.push(
-    { label: 'Take Home', ...getFigsByFrequency(incomeVal - pensionAmount - incomeTax - nationalInsurance - studentLoanRepayment) },
-  )
+  figures.push({
+    label: "Take Home",
+    ...getFigsByFrequency(
+      incomeVal -
+        pensionAmount -
+        incomeTax -
+        nationalInsurance -
+        studentLoanRepayment,
+    ),
+  });
 
-  return figures
+  return figures;
 }
 
 function toAnnual(value: number, freq: Frequency): number {
-  if (freq === 'monthly') return value * 12
-  if (freq === 'weekly') return value * 52
-  return value
+  if (freq === "monthly") return value * 12;
+  if (freq === "weekly") return value * 52;
+  return value;
 }
 
 const result = computed<CalculationResult | null>(() => {
-  const inputIncome = getIncome()
-  if (inputIncome === 0) return null
+  const inputIncome = getIncome();
+  if (inputIncome === 0) return null;
 
-  const annualGross = toAnnual(inputIncome, frequency.value)
-  const pensionAmount = getPensionAmount(annualGross)
+  const annualGross = toAnnual(inputIncome, frequency.value);
+  const pensionAmount = getPensionAmount(annualGross);
 
   // Salary sacrifice reduces income before both tax and NICs.
   // Personal/relief-at-source reduces taxable income only; NICs use full gross.
-  const taxableIncome = annualGross - pensionAmount
-  const nicIncome = pensionType.value === 'salary-sacrifice' ? taxableIncome : annualGross
+  const taxableIncome = annualGross - pensionAmount;
+  const nicIncome =
+    pensionType.value === "salary-sacrifice" ? taxableIncome : annualGross;
 
-  const incomeTax = calculateIncomeTax(taxableIncome, region.value)
-  const nationalInsurance = calculateNationalInsurance(nicIncome)
-  const studentLoanRepayment = calculateStudentLoan(annualGross, studentLoanPlan.value)
-  const effectiveRate = (incomeTax.tax + nationalInsurance.tax) / annualGross * 100
+  const incomeTax = calculateIncomeTax(taxableIncome, region.value);
+  const nationalInsurance = calculateNationalInsurance(nicIncome);
+  const studentLoanRepayment = calculateStudentLoan(
+    annualGross,
+    studentLoanPlan.value,
+  );
+
+  // TODO change to effective TAKE HOME rate, i.e. invert and include pension, student loan + employer NICS
+  // Be explicit in the UI about what this shows and show the formula
+  const effectiveRate =
+    ((incomeTax.tax + nationalInsurance.tax) / annualGross) * 100;
 
   return {
     effectiveRate,
-    headlineFigures: breakdownHeadlineFigures(annualGross, incomeTax.tax, nationalInsurance.tax, pensionAmount, studentLoanRepayment),
+    headlineFigures: breakdownHeadlineFigures(
+      annualGross,
+      incomeTax.tax,
+      nationalInsurance.tax,
+      pensionAmount,
+      studentLoanRepayment,
+    ),
     incomeTaxBreakdown: incomeTax.breakdown,
     nationalInsuranceBreakdown: nationalInsurance.breakdown,
-  }
-})
+  };
+});
 
 function formatWithCommas(value: string): string {
   if (!value) {
-    return ''
+    return "";
   }
 
   // Remove anything except digits and dot
-  const cleaned = value.replace(/[^0-9.]/g, '')
-  const parts = cleaned.split('.')
-  let intPart = parts[0]
+  const cleaned = value.replace(/[^0-9.]/g, "");
+  const parts = cleaned.split(".");
+  let intPart = parts[0];
 
   // Strip leading zeros unless the value is exactly '0' or starts with '0.'
-  intPart = intPart.replace(/^0+(?=\d)/, '')
+  intPart = intPart.replace(/^0+(?=\d)/, "");
 
   // Add commas
-  intPart = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+  intPart = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 
   if (parts.length > 1) {
-    const frac = parts[1].replace(/[^0-9]/g, '')
-    return intPart + '.' + frac
+    const frac = parts[1].replace(/[^0-9]/g, "");
+    return intPart + "." + frac;
   }
-  return intPart
+  return intPart;
 }
 
 function getIncome(): number {
-  const raw = income.value || ''
-  const numericString = String(raw).replace(/,/g, '').replace(/[^0-9.]/g, '')
-  return Number(numericString) || 0
+  const raw = income.value || "";
+  const numericString = String(raw)
+    .replace(/,/g, "")
+    .replace(/[^0-9.]/g, "");
+  return Number(numericString) || 0;
 }
 </script>
 
@@ -208,7 +244,9 @@ function getIncome(): number {
           <select v-model="pensionType" id="pension-type">
             <option value="none">None</option>
             <option value="salary-sacrifice">Salary Sacrifice</option>
-            <option value="relief-at-source">Personal / Relief at Source</option>
+            <option value="relief-at-source">
+              Personal / Relief at Source
+            </option>
           </select>
         </div>
 
@@ -226,7 +264,10 @@ function getIncome(): number {
               v-model="pensionInput"
               placeholder="0"
             />
-            <select v-model="pensionMode" aria-label="Pension contribution unit">
+            <select
+              v-model="pensionMode"
+              aria-label="Pension contribution unit"
+            >
               <option value="percent">%</option>
               <option value="amount">£</option>
             </select>
@@ -267,7 +308,10 @@ function getIncome(): number {
                         type="button"
                         @click="toggleIncomeTaxExpanded"
                       >
-                        <span class="arrow">{{ incomeTaxExpanded ? '▾' : '▸' }}</span> {{ fig.label }}
+                        <span class="arrow">{{
+                          incomeTaxExpanded ? "▾" : "▸"
+                        }}</span>
+                        {{ fig.label }}
                       </button>
                       <button
                         v-else-if="fig.label === 'National Insurance'"
@@ -275,7 +319,10 @@ function getIncome(): number {
                         type="button"
                         @click="toggleNationalInsuranceExpanded"
                       >
-                        <span class="arrow">{{ nationalInsuranceExpanded ? '▾' : '▸' }}</span> {{ fig.label }}
+                        <span class="arrow">{{
+                          nationalInsuranceExpanded ? "▾" : "▸"
+                        }}</span>
+                        {{ fig.label }}
                       </button>
                       <template v-else>
                         {{ fig.label }}
@@ -328,7 +375,10 @@ function getIncome(): number {
                     </tr>
                   </thead>
                   <tbody>
-                    <tr v-for="b in result.nationalInsuranceBreakdown" :key="b.band">
+                    <tr
+                      v-for="b in result.nationalInsuranceBreakdown"
+                      :key="b.band"
+                    >
                       <td>{{ b.band }}</td>
                       <td>£{{ formatCurrency(b.taxable) }}</td>
                       <td>£{{ formatCurrency(b.tax) }}</td>

@@ -24,17 +24,17 @@ const EMPLOYEE_BANDS = {
   bottom: {
     lower: 0,
     upper: 12584,
-    rate: 0
+    rate: 0,
   },
   mid: {
     lower: 12584,
     upper: 50284,
-    rate: 0.08
+    rate: 0.08,
   },
   higher: {
     lower: 50284,
     upper: Infinity,
-    rate: 0.02
+    rate: 0.02,
   },
 };
 
@@ -60,7 +60,7 @@ export function calculateNationalInsurance(income: number): Tax {
   const midBreakdown = {
     band: 'Middle',
     taxable: midTaxable,
-    tax: midTax
+    tax: midTax,
   };
   breakdown.push(midBreakdown);
   tax += midTax;
@@ -70,7 +70,7 @@ export function calculateNationalInsurance(income: number): Tax {
   if (higherTaxable === 0) {
     return {
       tax,
-      breakdown
+      breakdown,
     };
   }
 
@@ -85,6 +85,6 @@ export function calculateNationalInsurance(income: number): Tax {
 
   return {
     tax,
-    breakdown
+    breakdown,
   };
 }

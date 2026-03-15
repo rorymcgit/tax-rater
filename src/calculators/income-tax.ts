@@ -24,9 +24,14 @@ const TOP_RATE_GROSS_THRESHOLD = 125_140;
 // The higher rate upper bound is dynamic: (TOP_RATE_GROSS_THRESHOLD - personalAllowance).
 function getEnglandBands(topRateThreshold: number): TaxBand[] {
   return [
-    { name: 'Basic Rate',      lower: 0,               upper: 37_700,          rate: 0.20 },
-    { name: 'Higher Rate',     lower: 37_700,           upper: topRateThreshold, rate: 0.40 },
-    { name: 'Additional Rate', lower: topRateThreshold, upper: Infinity,        rate: 0.45 },
+    { name: 'Basic Rate', lower: 0, upper: 37_700, rate: 0.2 },
+    { name: 'Higher Rate', lower: 37_700, upper: topRateThreshold, rate: 0.4 },
+    {
+      name: 'Additional Rate',
+      lower: topRateThreshold,
+      upper: Infinity,
+      rate: 0.45,
+    },
   ];
 }
 
@@ -35,16 +40,24 @@ function getEnglandBands(topRateThreshold: number): TaxBand[] {
 // Taxable income thresholds derived by subtracting full PA (12570) from each gross threshold.
 function getScotlandBands(topRateThreshold: number): TaxBand[] {
   return [
-    { name: 'Starter Rate',        lower: 0,               upper: 2_827,           rate: 0.19 },
-    { name: 'Scottish Basic Rate', lower: 2_827,           upper: 14_921,          rate: 0.20 },
-    { name: 'Intermediate Rate',   lower: 14_921,          upper: 31_092,          rate: 0.21 },
-    { name: 'Higher Rate',         lower: 31_092,          upper: 62_430,          rate: 0.42 },
-    { name: 'Advanced Rate',       lower: 62_430,          upper: topRateThreshold, rate: 0.45 },
-    { name: 'Top Rate',            lower: topRateThreshold, upper: Infinity,        rate: 0.48 },
+    { name: 'Starter Rate', lower: 0, upper: 2_827, rate: 0.19 },
+    { name: 'Scottish Basic Rate', lower: 2_827, upper: 14_921, rate: 0.2 },
+    { name: 'Intermediate Rate', lower: 14_921, upper: 31_092, rate: 0.21 },
+    { name: 'Higher Rate', lower: 31_092, upper: 62_430, rate: 0.42 },
+    {
+      name: 'Advanced Rate',
+      lower: 62_430,
+      upper: topRateThreshold,
+      rate: 0.45,
+    },
+    { name: 'Top Rate', lower: topRateThreshold, upper: Infinity, rate: 0.48 },
   ];
 }
 
-export function calculateIncomeTax(grossIncome: number, region: Region = 'england'): Tax {
+export function calculateIncomeTax(
+  grossIncome: number,
+  region: Region = 'england',
+): Tax {
   let personalAllowance = PERSONAL_ALLOWANCE;
   if (grossIncome > 100_000) {
     const reduction = Math.floor((grossIncome - 100_000) / 2);
@@ -63,9 +76,10 @@ export function calculateIncomeTax(grossIncome: number, region: Region = 'englan
   // The boundary between the second-highest and top rate band shifts with personal allowance,
   // because it is always at gross £125,140 regardless of how much PA has been tapered.
   const topRateThreshold = TOP_RATE_GROSS_THRESHOLD - personalAllowance;
-  const bands = region === 'scotland'
-    ? getScotlandBands(topRateThreshold)
-    : getEnglandBands(topRateThreshold);
+  const bands =
+    region === 'scotland'
+      ? getScotlandBands(topRateThreshold)
+      : getEnglandBands(topRateThreshold);
 
   for (const band of bands) {
     if (taxableIncome <= band.lower) break;

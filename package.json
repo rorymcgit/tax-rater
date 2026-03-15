@@ -9,13 +9,15 @@
     "build": "vue-tsc && vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "format": "prettier --write \"src/**/*.{vue,ts}\""
   },
   "dependencies": {
     "vue": "^3.4.21"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.0.4",
+    "prettier": "^3.8.1",
     "sass": "^1.77.0",
     "typescript": "~5.5.2",
     "vite": "^5.4.0",
