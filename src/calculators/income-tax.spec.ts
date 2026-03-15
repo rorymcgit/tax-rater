@@ -4,11 +4,11 @@ import { calculateIncomeTax } from './income-tax';
 describe('IncomeTaxCalculator', () => {
   test('Income of 0 returns zero tax', () => {
     const res = calculateIncomeTax(0);
-    const taxes = res.breakdown.map(bd => bd.tax);
-    const taxable = res.breakdown.map(bd => bd.taxable);
+    const taxes = res.breakdown.map((bd) => bd.tax);
+    const taxable = res.breakdown.map((bd) => bd.taxable);
 
-    expect(taxes.every(tax => tax === 0)).toBe(true);
-    expect(taxable.every(taxable => taxable === 0)).toBe(true);
+    expect(taxes.every((tax) => tax === 0)).toBe(true);
+    expect(taxable.every((taxable) => taxable === 0)).toBe(true);
     expect(res.tax).toBe(0);
   });
 
@@ -16,7 +16,7 @@ describe('IncomeTaxCalculator', () => {
     const res = calculateIncomeTax(10_000);
 
     // Breakdown should show personal allowance used = income
-    const pa = res.breakdown.find(b => b.band === 'Personal Allowance');
+    const pa = res.breakdown.find((b) => b.band === 'Personal Allowance');
     expect(pa).toBeDefined();
     expect(pa!.taxable).toBe(10_000);
     expect(res.tax).toBe(0);
@@ -51,7 +51,7 @@ describe('IncomeTaxCalculator', () => {
     const res = calculateIncomeTax(110_000);
 
     // Reduction = floor((110000 - 100000)/2) = 5000 => PA = 12570 - 5000 = 7570
-    const pa = res.breakdown.find(b => b.band === 'Personal Allowance');
+    const pa = res.breakdown.find((b) => b.band === 'Personal Allowance');
     expect(pa!.taxable).toBe(7570);
 
     // Taxable remainder should equal income - PA
@@ -64,7 +64,7 @@ describe('IncomeTaxCalculator', () => {
     const res = calculateIncomeTax(124_000);
 
     // Reduction = floor((124000 - 100000)/2) = 12000 => PA = 12570 - 12000 = 570
-    const pa = res.breakdown.find(b => b.band === 'Personal Allowance');
+    const pa = res.breakdown.find((b) => b.band === 'Personal Allowance');
     expect(pa!.taxable).toBe(570);
 
     // Taxable remainder should equal income - PA
