@@ -11,20 +11,20 @@ describe('calculateStudentLoan', () => {
   });
 
   describe('income below threshold returns 0', () => {
-    it('plan1: returns 0 at or below £24,990', () => {
-      expect(calculateStudentLoan(24_990, 'plan1')).toBe(0);
+    it('plan1: returns 0 at or below £26,065', () => {
+      expect(calculateStudentLoan(26_065, 'plan1')).toBe(0);
       expect(calculateStudentLoan(10_000, 'plan1')).toBe(0);
       expect(calculateStudentLoan(0, 'plan1')).toBe(0);
     });
 
-    it('plan2: returns 0 at or below £27,295', () => {
-      expect(calculateStudentLoan(27_295, 'plan2')).toBe(0);
+    it('plan2: returns 0 at or below £28,470', () => {
+      expect(calculateStudentLoan(28_470, 'plan2')).toBe(0);
       expect(calculateStudentLoan(15_000, 'plan2')).toBe(0);
       expect(calculateStudentLoan(0, 'plan2')).toBe(0);
     });
 
-    it('plan4: returns 0 at or below £31,395', () => {
-      expect(calculateStudentLoan(31_395, 'plan4')).toBe(0);
+    it('plan4: returns 0 at or below £32,745', () => {
+      expect(calculateStudentLoan(32_745, 'plan4')).toBe(0);
       expect(calculateStudentLoan(20_000, 'plan4')).toBe(0);
       expect(calculateStudentLoan(0, 'plan4')).toBe(0);
     });
@@ -43,19 +43,19 @@ describe('calculateStudentLoan', () => {
   });
 
   describe('mid-range income repayment calculations', () => {
-    it('plan1: 9% on income above £24,990', () => {
-      // £35,000 income: (35000 - 24990) * 0.09 = 10010 * 0.09 = 900.90
-      expect(calculateStudentLoan(35_000, 'plan1')).toBeCloseTo(900.9, 2);
+    it('plan1: 9% on income above £26,065', () => {
+      // £35,000 income: (35000 - 26065) * 0.09 = 8935 * 0.09 = 804.15
+      expect(calculateStudentLoan(35_000, 'plan1')).toBeCloseTo(804.15, 2);
     });
 
-    it('plan2: 9% on income above £27,295', () => {
-      // £40,000 income: (40000 - 27295) * 0.09 = 12705 * 0.09 = 1143.45
-      expect(calculateStudentLoan(40_000, 'plan2')).toBeCloseTo(1143.45, 2);
+    it('plan2: 9% on income above £28,470', () => {
+      // £40,000 income: (40000 - 28470) * 0.09 = 11530 * 0.09 = 1037.70
+      expect(calculateStudentLoan(40_000, 'plan2')).toBeCloseTo(1037.7, 2);
     });
 
-    it('plan4: 9% on income above £31,395', () => {
-      // £50,000 income: (50000 - 31395) * 0.09 = 18605 * 0.09 = 1674.45
-      expect(calculateStudentLoan(50_000, 'plan4')).toBeCloseTo(1674.45, 2);
+    it('plan4: 9% on income above £32,745', () => {
+      // £50,000 income: (50000 - 32745) * 0.09 = 17255 * 0.09 = 1552.95
+      expect(calculateStudentLoan(50_000, 'plan4')).toBeCloseTo(1552.95, 2);
     });
 
     it('plan5: 9% on income above £25,000', () => {
@@ -71,17 +71,17 @@ describe('calculateStudentLoan', () => {
 
   describe('rate verification', () => {
     it('plan1 applies exactly 9% above the threshold', () => {
-      const income = 34_990; // exactly £10,000 above threshold
+      const income = 36_065; // exactly £10,000 above threshold
       expect(calculateStudentLoan(income, 'plan1')).toBe(10_000 * 0.09);
     });
 
     it('plan2 applies exactly 9% above the threshold', () => {
-      const income = 37_295; // exactly £10,000 above threshold
+      const income = 38_470; // exactly £10,000 above threshold
       expect(calculateStudentLoan(income, 'plan2')).toBe(10_000 * 0.09);
     });
 
     it('plan4 applies exactly 9% above the threshold', () => {
-      const income = 41_395; // exactly £10,000 above threshold
+      const income = 42_745; // exactly £10,000 above threshold
       expect(calculateStudentLoan(income, 'plan4')).toBe(10_000 * 0.09);
     });
 
