@@ -3,6 +3,7 @@ import { ref, computed } from "vue";
 import { calculateIncomeTax } from "./calculators/income-tax";
 import type { Region } from "./calculators/income-tax";
 import { calculateNationalInsurance } from "./calculators/national-insurance";
+import { calculateEmployerNationalInsurance } from "./calculators/employer-national-insurance";
 import { calculateSelfEmployedNI } from "./calculators/national-insurance-self-employed";
 import type { SelfEmployedNI } from "./calculators/national-insurance-self-employed";
 import { calculateStudentLoan } from "./calculators/student-loan";
@@ -43,6 +44,7 @@ const pensionMode = ref<PensionMode>("percent");
 const pensionInput = ref("");
 const studentLoanPlan = ref<StudentLoanPlan>("none");
 const dividendIncome = ref("");
+const showEmployerNICs = ref(false);
 const incomeTaxExpanded = ref(false);
 const nationalInsuranceExpanded = ref(false);
 const dividendTaxExpanded = ref(false);
@@ -245,6 +247,16 @@ const result = computed<CalculationResult | null>(() => {
   };
 });
 
+const employerNICs = computed(() => {
+  if (!showEmployerNICs.value || employmentType.value === "self-employed") return null;
+  const inputIncome = getIncome();
+  if (inputIncome === 0) return null;
+  const annualGross = toAnnual(inputIncome, frequency.value);
+  const pensionAmount = getPensionAmount(annualGross);
+  const nicIncome = pensionType.value === "salary-sacrifice" ? annualGross - pensionAmount : annualGross;
+  return calculateEmployerNationalInsurance(nicIncome);
+});
+
 function formatWithCommas(value: string): string {
   if (!value) {
     return "";
@@ -387,6 +399,11 @@ function getIncome(): number {
           </select>
         </div>
 
+        <div v-if="employmentType === 'employed'" class="form-element">
+          <label for="show-employer-nics">Employer NICs: </label>
+          <input type="checkbox" id="show-employer-nics" v-model="showEmployerNICs" />
+        </div>
+
         <section class="calculator-section">
           <div v-if="result" class="result-box">
             <div class="table-wrap">
@@ -518,6 +535,34 @@ function getIncome(): number {
                 </table>
               </div>
             </template>
+          </div>
+        </section>
+
+        <section v-if="employerNICs" class="calculator-section">
+          <div class="result-box employer-cost-box">
+            <h3 class="employer-cost-label">Employer Cost (not your deduction)</h3>
+            <div class="table-wrap">
+              <table class="calculator-table">
+                <thead>
+                  <tr>
+                    <th></th>
+                    <th>Annually</th>
+                    <th>Monthly</th>
+                    <th>Weekly</th>
+                    <th>Daily</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Employer NICs</td>
+                    <td>£{{ formatCurrency(employerNICs.tax) }}</td>
+                    <td>£{{ formatCurrency(employerNICs.tax / 12) }}</td>
+                    <td>£{{ formatCurrency(employerNICs.tax / 52) }}</td>
+                    <td>£{{ formatCurrency(employerNICs.tax / 252) }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
         </section>
       </div>
@@ -712,6 +757,16 @@ table.calculator-table td {
 table.calculator-table th {
   border-bottom: 1px solid #ddd;
   text-align: left;
+}
+
+.employer-cost-box {
+  border-color: #444;
+}
+
+.employer-cost-label {
+  color: $gray-400;
+  text-align: center;
+  margin-top: 0;
 }
 
 .radio-label {
