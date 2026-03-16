@@ -1185,14 +1185,14 @@ table.calculator-table th {
 .taper-warning {
   width: 400px;
   padding: 0.6rem 0.75rem;
-  border-left: 3px solid #f5a623;
+  border-left: 3px solid var(--taper-accent);
   background: rgba(245, 166, 35, 0.08);
   font-size: 0.8rem;
   color: var(--text-subtle);
   line-height: 1.4;
 
   strong {
-    color: #f5a623;
+    color: var(--taper-accent);
   }
 
   @media screen and (max-width: 650px) {
