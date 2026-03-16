@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { calculateIncomeTax } from "./calculators/income-tax";
 import type { Region } from "./calculators/income-tax";
 import { calculateNationalInsurance } from "./calculators/national-insurance";
@@ -288,6 +288,92 @@ const incomeBar = computed<IncomeBarSegment[]>(() => {
     }));
 });
 
+const annualGross = computed(() => toAnnual(getIncome(), frequency.value));
+
+const sliderValue = computed(() => getIncome());
+
+function onSliderChange(e: Event): void {
+  income.value = formatWithCommas(String(Number((e.target as HTMLInputElement).value)));
+}
+
+function formatPounds(value: number): string {
+  return "£" + Math.round(value).toLocaleString("en-GB");
+}
+
+const nextBandMessage = computed<string | null>(() => {
+  const gross = annualGross.value;
+  if (gross <= 0 || gross >= 125_140) return null;
+
+  if (region.value === "scotland") {
+    if (gross < 12_570) return `${formatPounds(12_570 - gross)} until Starter Rate (19%)`;
+    if (gross < 15_397) return `${formatPounds(15_397 - gross)} until Basic Rate (20%)`;
+    if (gross < 27_491) return `${formatPounds(27_491 - gross)} until Intermediate Rate (21%)`;
+    if (gross < 43_662) return `${formatPounds(43_662 - gross)} until Higher Rate (42%)`;
+    if (gross < 75_000) return `${formatPounds(75_000 - gross)} until Advanced Rate (45%)`;
+    if (gross < 100_000) return `${formatPounds(100_000 - gross)} until Personal Allowance taper`;
+    return null;
+  }
+
+  if (gross < 12_570) return `${formatPounds(12_570 - gross)} until Basic Rate (20%)`;
+  if (gross < 50_270) return `${formatPounds(50_270 - gross)} until Higher Rate (40%)`;
+  if (gross < 100_000) return `${formatPounds(100_000 - gross)} until Personal Allowance taper`;
+  return null;
+});
+
+const showTaperWarning = computed(
+  () => annualGross.value > 100_000 && annualGross.value < 125_140,
+);
+
+interface MarginalRate {
+  total: number;
+  itRate: number;
+  niRate: number;
+  nicLabel: string;
+  isTaper: boolean;
+}
+
+const marginalRate = computed<MarginalRate | null>(() => {
+  const gross = annualGross.value;
+  if (gross <= 0) return null;
+
+  let itRate: number;
+  let isTaper = false;
+
+  if (region.value === "scotland") {
+    if (gross <= 12_570) itRate = 0;
+    else if (gross <= 15_397) itRate = 19;
+    else if (gross <= 27_491) itRate = 20;
+    else if (gross <= 43_662) itRate = 21;
+    else if (gross <= 75_000) itRate = 42;
+    else if (gross <= 100_000) itRate = 45;
+    else if (gross <= 125_140) { itRate = 68; isTaper = true; }
+    else itRate = 48;
+  } else {
+    if (gross <= 12_570) itRate = 0;
+    else if (gross <= 50_270) itRate = 20;
+    else if (gross <= 100_000) itRate = 40;
+    else if (gross <= 125_140) { itRate = 60; isTaper = true; }
+    else itRate = 45;
+  }
+
+  let niRate: number;
+  let nicLabel: string;
+
+  if (employmentType.value === "self-employed") {
+    nicLabel = "Class 4 NI";
+    if (gross <= 12_570) niRate = 0;
+    else if (gross <= 50_270) niRate = 6;
+    else niRate = 2;
+  } else {
+    nicLabel = "NI";
+    if (gross <= 12_584) niRate = 0;
+    else if (gross <= 50_284) niRate = 8;
+    else niRate = 2;
+  }
+
+  return { total: itRate + niRate, itRate, niRate, nicLabel, isTaper };
+});
+
 function formatWithCommas(value: string): string {
   if (!value) {
     return "";
@@ -317,6 +403,43 @@ function getIncome(): number {
     .replace(/,/g, "")
     .replace(/[^0-9.]/g, "");
   return Number(numericString) || 0;
+}
+
+// Shareable URL
+const shareMessage = ref<string | null>(null);
+
+onMounted(() => {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("income")) income.value = formatWithCommas(params.get("income")!);
+  if (params.get("region")) region.value = params.get("region") as Region;
+  if (params.get("freq")) frequency.value = params.get("freq") as Frequency;
+  if (params.get("employment")) employmentType.value = params.get("employment") as EmploymentType;
+  if (params.get("pension")) pensionType.value = params.get("pension") as PensionType;
+  if (params.get("pensionMode")) pensionMode.value = params.get("pensionMode") as PensionMode;
+  if (params.get("pensionInput")) pensionInput.value = params.get("pensionInput")!;
+  if (params.get("loan")) studentLoanPlan.value = params.get("loan") as StudentLoanPlan;
+  if (params.get("dividends")) dividendIncome.value = formatWithCommas(params.get("dividends")!);
+});
+
+function getShareableUrl(): string {
+  const params = new URLSearchParams();
+  if (income.value) params.set("income", getIncome().toString());
+  if (region.value !== "england") params.set("region", region.value);
+  if (frequency.value !== "annual") params.set("freq", frequency.value);
+  if (employmentType.value !== "employed") params.set("employment", employmentType.value);
+  if (pensionType.value !== "none") params.set("pension", pensionType.value);
+  if (pensionType.value !== "none" && pensionMode.value !== "percent") params.set("pensionMode", pensionMode.value);
+  if (pensionType.value !== "none" && pensionInput.value) params.set("pensionInput", pensionInput.value);
+  if (studentLoanPlan.value !== "none") params.set("loan", studentLoanPlan.value);
+  if (dividendIncome.value) params.set("dividends", getDividendIncome().toString());
+  const qs = params.toString();
+  return window.location.origin + window.location.pathname + (qs ? "?" + qs : "");
+}
+
+async function copyShareUrl(): Promise<void> {
+  await navigator.clipboard.writeText(getShareableUrl());
+  shareMessage.value = "Copied!";
+  setTimeout(() => { shareMessage.value = null; }, 2000);
 }
 </script>
 
@@ -365,6 +488,22 @@ function getIncome(): number {
               <option value="weekly">/ week</option>
             </select>
           </div>
+          <input
+            type="range"
+            min="0"
+            max="300000"
+            step="500"
+            :value="sliderValue"
+            @input="onSliderChange"
+            class="income-slider"
+            aria-label="Income slider"
+          />
+        </div>
+
+        <div v-if="nextBandMessage" class="band-nudge">{{ nextBandMessage }}</div>
+
+        <div v-if="showTaperWarning" class="taper-warning">
+          <strong>Personal Allowance taper zone</strong> — you lose £1 of your Personal Allowance for every £2 earned above £100,000, creating an effective <strong>60–62% marginal rate</strong> until £125,140.
         </div>
 
         <div class="form-element">
@@ -384,7 +523,16 @@ function getIncome(): number {
         </div>
 
         <div class="form-element">
-          <label for="pension-type">Pension: </label>
+          <label for="pension-type">
+            Pension
+            <span class="tooltip-wrap">
+              <span class="info-icon">ⓘ</span>
+              <span class="tooltip-text">
+                <strong>Salary Sacrifice:</strong> contributions come out before tax and NI — you save both.<br><br>
+                <strong>Personal / Relief at Source:</strong> contributions come from post-tax pay; HMRC adds 20% basic rate relief automatically.
+              </span>
+            </span>:
+          </label>
           <select v-model="pensionType" id="pension-type">
             <option value="none">None</option>
             <option value="salary-sacrifice">Salary Sacrifice</option>
@@ -542,9 +690,22 @@ function getIncome(): number {
               </table>
             </div>
 
-            <h3 class="effective-rate">
-              Effective Tax Rate: {{ formatCurrency(result.effectiveRate) }}%
-            </h3>
+            <div class="rates-row">
+              <span class="effective-rate">Effective: {{ formatCurrency(result.effectiveRate) }}%</span>
+              <span v-if="marginalRate" class="marginal-rate">
+                Marginal: {{ marginalRate.total }}%
+                <template v-if="marginalRate.itRate > 0">
+                  = {{ marginalRate.itRate }}% IT<template v-if="marginalRate.isTaper">*</template> + {{ marginalRate.niRate }}% {{ marginalRate.nicLabel }}
+                </template>
+                <template v-else>
+                  = {{ marginalRate.niRate }}% {{ marginalRate.nicLabel }} only
+                </template>
+              </span>
+            </div>
+            <div class="share-row">
+              <button class="share-btn" @click="copyShareUrl">Share</button>
+              <span v-if="shareMessage" class="share-message">{{ shareMessage }}</span>
+            </div>
 
             <div v-if="incomeTaxExpanded" class="full-width-breakdown">
               <h3>Income Tax - Breakdown by Band</h3>
@@ -742,11 +903,6 @@ form .button-container {
   justify-content: space-between;
 }
 
-.effective-rate {
-  color: #d8f24e;
-  text-align: center;
-}
-
 @media screen and (max-width: 650px) {
   .divider {
     height: 1px;
@@ -914,5 +1070,160 @@ table.calculator-table th {
   height: 10px;
   border-radius: 2px;
   flex-shrink: 0;
+}
+
+// Salary slider
+.income-slider {
+  appearance: none;
+  -webkit-appearance: none;
+  background: #1a1a3e !important;
+  padding: 0 !important;
+  height: 6px;
+  border-radius: 3px;
+  accent-color: #d8f24e;
+  cursor: pointer;
+  width: 100%;
+  margin-top: 0.75rem;
+
+  &::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #d8f24e;
+    cursor: pointer;
+  }
+
+  &::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #d8f24e;
+    cursor: pointer;
+    border: none;
+  }
+}
+
+// Band nudge
+.band-nudge {
+  width: 400px;
+  margin-top: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-left: 3px solid #d8f24e;
+  font-size: 0.8rem;
+  color: #ccc;
+
+  @media screen and (max-width: 650px) {
+    width: 100%;
+  }
+}
+
+// Taper warning
+.taper-warning {
+  width: 400px;
+  margin-top: 0.5rem;
+  padding: 0.6rem 0.75rem;
+  border-left: 3px solid #f5a623;
+  background: rgba(245, 166, 35, 0.08);
+  font-size: 0.8rem;
+  color: #ccc;
+  line-height: 1.4;
+
+  strong {
+    color: #f5a623;
+  }
+
+  @media screen and (max-width: 650px) {
+    width: 100%;
+  }
+}
+
+// Rates row
+.rates-row {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #222;
+  font-size: 0.9rem;
+}
+
+.effective-rate {
+  color: #d8f24e;
+  font-weight: 700;
+}
+
+.marginal-rate {
+  color: #aaa;
+}
+
+// Pension tooltip
+.tooltip-wrap {
+  position: relative;
+  display: inline-block;
+  margin-inline: 0.2rem;
+}
+
+.info-icon {
+  font-size: 0.8rem;
+  color: #888;
+  cursor: help;
+}
+
+.tooltip-text {
+  display: none;
+  position: absolute;
+  left: 0;
+  top: 1.4em;
+  width: 240px;
+  background: #1a1a3e;
+  border: 1px solid #333;
+  padding: 0.75rem;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: #ccc;
+  z-index: 10;
+  border-radius: 4px;
+  font-weight: 400;
+
+  strong {
+    color: #fff;
+  }
+}
+
+.tooltip-wrap:hover .tooltip-text {
+  display: block;
+}
+
+// Share row
+.share-row {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.share-btn {
+  background: transparent !important;
+  border: 1px solid #444 !important;
+  color: #aaa !important;
+  padding: 0.3rem 1rem !important;
+  font-size: 0.8rem;
+  border-radius: 4px;
+  cursor: pointer;
+
+  &:hover {
+    border-color: #d8f24e !important;
+    color: #d8f24e !important;
+  }
+}
+
+.share-message {
+  font-size: 0.8rem;
+  color: #d8f24e;
 }
 </style>
