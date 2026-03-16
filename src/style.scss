@@ -5,22 +5,47 @@ body {
   font-weight: 800;
 }
 
-
-input,
-button,
+input:not([type="range"]):not([type="radio"]):not([type="checkbox"]),
 select {
-  background: #d8f24e;
+  background: #0d0d30;
+  color: #e2e0e0;
+  border: 1px solid #2a2a4e;
+  border-radius: 6px;
   padding: 8px;
-  border-radius: 8px;
-  color: #00001e;
-  font-weight: 800;
+  font-weight: 600;
+  font-family: inherit;
+  font-size: inherit;
 
   &::placeholder {
-    color: #17174c;
+    color: #4a4a6e;
+    font-weight: 400;
+  }
+
+  &:focus {
+    outline: none;
+    border-color: #d8f24e;
+    box-shadow: 0 0 0 2px rgba(216, 242, 78, 0.12);
   }
 }
 
-button,
 select {
   cursor: pointer;
+}
+
+input[type="radio"],
+input[type="checkbox"] {
+  accent-color: #d8f24e;
+  cursor: pointer;
+}
+
+button {
+  background: #d8f24e;
+  color: #00001e;
+  font-weight: 800;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 16px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: inherit;
 }

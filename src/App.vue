@@ -474,35 +474,37 @@ async function copyShareUrl(): Promise<void> {
           </select>
         </div>
 
-        <div class="form-element">
+        <div class="form-element income-form-element">
           <label for="income">Income: </label>
-          <div class="input-row">
-            <span>£</span>
+          <div class="income-input-group">
+            <div class="input-row">
+              <span>£</span>
+              <input
+                id="income"
+                type="text"
+                inputmode="decimal"
+                autocomplete="off"
+                :value="income"
+                :placeholder="incomePlaceholder"
+                @input="formatIncomeInput"
+              />
+              <select v-model="frequency" aria-label="Income frequency">
+                <option value="annual">/ year</option>
+                <option value="monthly">/ month</option>
+                <option value="weekly">/ week</option>
+              </select>
+            </div>
             <input
-              id="income"
-              type="text"
-              inputmode="decimal"
-              autocomplete="off"
-              :value="income"
-              :placeholder="incomePlaceholder"
-              @input="formatIncomeInput"
+              type="range"
+              min="0"
+              max="300000"
+              step="500"
+              :value="sliderValue"
+              @input="onSliderChange"
+              class="income-slider"
+              aria-label="Income slider"
             />
-            <select v-model="frequency" aria-label="Income frequency">
-              <option value="annual">/ year</option>
-              <option value="monthly">/ month</option>
-              <option value="weekly">/ week</option>
-            </select>
           </div>
-          <input
-            type="range"
-            min="0"
-            max="300000"
-            step="500"
-            :value="sliderValue"
-            @input="onSliderChange"
-            class="income-slider"
-            aria-label="Income slider"
-          />
         </div>
 
         <div v-if="nextBandMessage" class="band-nudge">{{ nextBandMessage }}</div>
@@ -891,6 +893,7 @@ main.main {
   display: flex;
   flex-direction: column;
   align-items: center;
+  gap: 0.6rem;
 }
 
 .form-panel h1 {
@@ -947,7 +950,7 @@ form .button-container {
 .result-box {
   margin-top: 1rem;
   padding: 24px;
-  border: 1px solid #eee;
+  border: 1px solid #1a1a3e;
   border-radius: 6px;
 }
 
@@ -1057,6 +1060,7 @@ table.calculator-table th {
 
 .income-bar {
   display: flex;
+  gap: 2px;
   height: 28px;
   border-radius: 6px;
   overflow: hidden;
@@ -1085,8 +1089,25 @@ table.calculator-table th {
 .legend-dot {
   width: 10px;
   height: 10px;
-  border-radius: 2px;
+  border-radius: 50%;
   flex-shrink: 0;
+}
+
+.income-form-element {
+  align-items: flex-start;
+}
+
+.income-input-group {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+#income {
+  min-width: 0;
+  flex: 1;
+  width: 0; // forces flex shrink; actual size determined by flex container
 }
 
 // Salary slider
@@ -1124,7 +1145,6 @@ table.calculator-table th {
 // Band nudge
 .band-nudge {
   width: 400px;
-  margin-top: 0.5rem;
   padding: 0.5rem 0.75rem;
   border-left: 3px solid #d8f24e;
   font-size: 0.8rem;
@@ -1138,7 +1158,6 @@ table.calculator-table th {
 // Taper warning
 .taper-warning {
   width: 400px;
-  margin-top: 0.5rem;
   padding: 0.6rem 0.75rem;
   border-left: 3px solid #f5a623;
   background: rgba(245, 166, 35, 0.08);
@@ -1225,17 +1244,16 @@ table.calculator-table th {
 }
 
 .share-btn {
-  background: transparent !important;
-  border: 1px solid #444 !important;
-  color: #aaa !important;
-  padding: 0.3rem 1rem !important;
+  background: transparent;
+  border: 1px solid #444;
+  color: #aaa;
+  padding: 0.3rem 1rem;
   font-size: 0.8rem;
   border-radius: 4px;
-  cursor: pointer;
 
   &:hover {
-    border-color: #d8f24e !important;
-    color: #d8f24e !important;
+    border-color: #d8f24e;
+    color: #d8f24e;
   }
 }
 
@@ -1257,18 +1275,17 @@ table.calculator-table th {
 
 .freq-tab {
   flex: 1;
-  background: transparent !important;
-  border: 1px solid #333 !important;
-  color: #aaa !important;
-  padding: 0.35rem 0 !important;
+  background: transparent;
+  border: 1px solid #333;
+  color: #aaa;
+  padding: 0.35rem 0;
   font-size: 0.75rem;
   border-radius: 4px;
-  cursor: pointer;
 
   &.active {
-    background: #d8f24e !important;
-    color: #00001e !important;
-    border-color: #d8f24e !important;
+    background: #d8f24e;
+    color: #00001e;
+    border-color: #d8f24e;
     font-weight: 700;
   }
 }
