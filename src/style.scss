@@ -1,15 +1,65 @@
+:root {
+  --bg: #00001e;
+  --surface-input: #0d0d30;
+  --border: #1a1a3e;
+  --border-input: #2a2a4e;
+  --text: #e2e0e0;
+  --text-muted: #aaa;
+  --text-subtle: #ccc;
+  --text-dim: #888;
+  --placeholder: #4a4a6e;
+  --accent: #d8f24e;
+  --accent-on: #00001e;
+  --focus-ring: 0 0 0 2px rgba(216, 242, 78, 0.18);
+  --table-cell-border: rgba(255, 255, 255, 0.06);
+  --table-header-border: rgba(255, 255, 255, 0.12);
+  --table-stripe: rgba(255, 255, 255, 0.02);
+  --take-home-separator: #222;
+  --slider-track: #1a1a3e;
+  --nudge-bg: rgba(255, 255, 255, 0.03);
+  --tooltip-bg: #1a1a3e;
+  --tooltip-border: #333;
+  --sticky-bg: #0a0a2e;
+  --employer-border: #444;
+}
+
+html.light {
+  --bg: #f0f0f8;
+  --surface-input: #ffffff;
+  --border: #d0d0e8;
+  --border-input: #b8b8d8;
+  --text: #1a1a2e;
+  --text-muted: #555;
+  --text-subtle: #666;
+  --text-dim: #777;
+  --placeholder: #9090b0;
+  --accent: #1e3a8a;
+  --accent-on: #ffffff;
+  --focus-ring: 0 0 0 2px rgba(30, 58, 138, 0.18);
+  --table-cell-border: rgba(0, 0, 0, 0.07);
+  --table-header-border: rgba(0, 0, 0, 0.14);
+  --table-stripe: rgba(0, 0, 0, 0.02);
+  --take-home-separator: #d8d8e8;
+  --slider-track: #d0d0e8;
+  --nudge-bg: rgba(30, 58, 138, 0.1);
+  --tooltip-bg: #ffffff;
+  --tooltip-border: #ccc;
+  --sticky-bg: #e8e8f4;
+  --employer-border: #ccc;
+}
+
 body {
-  background: #00001e;
-  color: #e2e0e0;
+  background: var(--bg);
+  color: var(--text);
   font-family: 'DM Sans', sans-serif;
   font-weight: 800;
 }
 
 input:not([type="range"]):not([type="radio"]):not([type="checkbox"]),
 select {
-  background: #0d0d30;
-  color: #e2e0e0;
-  border: 1px solid #2a2a4e;
+  background: var(--surface-input);
+  color: var(--text);
+  border: 1px solid var(--border-input);
   border-radius: 6px;
   padding: 8px;
   font-weight: 600;
@@ -17,14 +67,14 @@ select {
   font-size: inherit;
 
   &::placeholder {
-    color: #4a4a6e;
+    color: var(--placeholder);
     font-weight: 400;
   }
 
   &:focus {
     outline: none;
-    border-color: #d8f24e;
-    box-shadow: 0 0 0 2px rgba(216, 242, 78, 0.12);
+    border-color: var(--accent);
+    box-shadow: var(--focus-ring);
   }
 }
 
@@ -34,13 +84,13 @@ select {
 
 input[type="radio"],
 input[type="checkbox"] {
-  accent-color: #d8f24e;
+  accent-color: var(--accent);
   cursor: pointer;
 }
 
 button {
-  background: #d8f24e;
-  color: #00001e;
+  background: var(--accent);
+  color: var(--accent-on);
   font-weight: 800;
   border: none;
   border-radius: 6px;

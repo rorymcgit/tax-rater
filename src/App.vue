@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, watchEffect } from "vue";
 import { calculateIncomeTax } from "./calculators/income-tax";
 import type { Region } from "./calculators/income-tax";
 import { calculateNationalInsurance } from "./calculators/national-insurance";
@@ -50,6 +50,18 @@ const INCOME_BAR_COLOURS: Record<string, string> = {
   "Dividend Tax": "#f5a623",
   "Take Home": "#d8f24e",
 };
+
+// Theme
+const isDark = ref(
+  localStorage.getItem("theme")
+    ? localStorage.getItem("theme") === "dark"
+    : window.matchMedia("(prefers-color-scheme: dark)").matches,
+);
+watchEffect(() => {
+  document.documentElement.classList.toggle("light", !isDark.value);
+  localStorage.setItem("theme", isDark.value ? "dark" : "light");
+});
+function toggleTheme(): void { isDark.value = !isDark.value; }
 
 const title = "Tax Calculator";
 const income = ref("");
@@ -452,6 +464,11 @@ async function copyShareUrl(): Promise<void> {
   <main class="main">
     <div class="app-layout">
       <div class="form-panel">
+        <div class="theme-toggle-row">
+          <button class="theme-toggle" @click="toggleTheme" :aria-label="isDark ? 'Switch to light mode' : 'Switch to dark mode'">
+            {{ isDark ? '☀' : '☾' }}
+          </button>
+        </div>
         <h1>{{ title }}</h1>
 
         <div class="form-element">
@@ -950,7 +967,7 @@ form .button-container {
 .result-box {
   margin-top: 1rem;
   padding: 24px;
-  border: 1px solid #1a1a3e;
+  border: 1px solid var(--border);
   border-radius: 6px;
 }
 
@@ -971,7 +988,7 @@ table.calculator-table {
 table.calculator-table th,
 table.calculator-table td {
   padding: 10px 8px;
-  border-bottom: 1px solid #f5f5f5;
+  border-bottom: 1px solid var(--table-cell-border);
   text-align: right;
 }
 
@@ -981,14 +998,14 @@ table.calculator-table td:first-child {
 }
 
 table.calculator-table tbody tr:nth-child(even) {
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--table-stripe);
 }
 
 .take-home-row td {
-  color: #d8f24e;
+  color: var(--accent);
   font-size: 1.05rem;
   font-weight: 800;
-  border-top: 1px solid #222;
+  border-top: 1px solid var(--take-home-separator);
 }
 
 .inline-details {
@@ -1004,7 +1021,7 @@ table.calculator-table tbody tr:nth-child(even) {
   padding: 0;
   margin: 0;
   font-weight: 600;
-  color: #e2e0e0;
+  color: var(--text);
   background: transparent;
   border: 0;
   font: inherit;
@@ -1033,11 +1050,18 @@ table.calculator-table tbody tr:nth-child(even) {
 }
 
 table.calculator-table th {
-  border-bottom: 1px solid #ddd;
+  border-bottom: 1px solid var(--table-header-border);
 }
 
 .employer-cost-box {
-  border-color: #444;
+  border-color: var(--employer-border);
+}
+
+#employer-nic-category {
+  min-width: 0;
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .employer-cost-label {
@@ -1083,7 +1107,7 @@ table.calculator-table th {
   align-items: center;
   gap: 0.35rem;
   font-size: 0.8rem;
-  color: #ccc;
+  color: var(--text-subtle);
 }
 
 .legend-dot {
@@ -1114,11 +1138,11 @@ table.calculator-table th {
 .income-slider {
   appearance: none;
   -webkit-appearance: none;
-  background: #1a1a3e !important;
+  background: var(--slider-track) !important;
   padding: 0 !important;
   height: 6px;
   border-radius: 3px;
-  accent-color: #d8f24e;
+  accent-color: var(--accent);
   cursor: pointer;
   width: 100%;
   margin-top: 0.75rem;
@@ -1128,7 +1152,7 @@ table.calculator-table th {
     width: 16px;
     height: 16px;
     border-radius: 50%;
-    background: #d8f24e;
+    background: var(--accent);
     cursor: pointer;
   }
 
@@ -1136,7 +1160,7 @@ table.calculator-table th {
     width: 16px;
     height: 16px;
     border-radius: 50%;
-    background: #d8f24e;
+    background: var(--accent);
     cursor: pointer;
     border: none;
   }
@@ -1146,9 +1170,11 @@ table.calculator-table th {
 .band-nudge {
   width: 400px;
   padding: 0.5rem 0.75rem;
-  border-left: 3px solid #d8f24e;
+  border-left: 3px solid var(--accent);
+  background: var(--nudge-bg);
+  border-radius: 0 4px 4px 0;
   font-size: 0.8rem;
-  color: #ccc;
+  color: var(--text-subtle);
 
   @media screen and (max-width: 650px) {
     width: 100%;
@@ -1162,7 +1188,7 @@ table.calculator-table th {
   border-left: 3px solid #f5a623;
   background: rgba(245, 166, 35, 0.08);
   font-size: 0.8rem;
-  color: #ccc;
+  color: var(--text-subtle);
   line-height: 1.4;
 
   strong {
@@ -1183,17 +1209,17 @@ table.calculator-table th {
   flex-wrap: wrap;
   margin-top: 1rem;
   padding-top: 0.75rem;
-  border-top: 1px solid #222;
+  border-top: 1px solid var(--take-home-separator);
   font-size: 0.9rem;
 }
 
 .effective-rate {
-  color: #d8f24e;
+  color: var(--accent);
   font-weight: 700;
 }
 
 .marginal-rate {
-  color: #aaa;
+  color: var(--text-muted);
 }
 
 // Pension tooltip
@@ -1215,18 +1241,18 @@ table.calculator-table th {
   left: 0;
   top: 1.4em;
   width: 240px;
-  background: #1a1a3e;
-  border: 1px solid #333;
+  background: var(--tooltip-bg);
+  border: 1px solid var(--tooltip-border);
   padding: 0.75rem;
   font-size: 0.8rem;
   line-height: 1.4;
-  color: #ccc;
+  color: var(--text-subtle);
   z-index: 10;
   border-radius: 4px;
   font-weight: 400;
 
   strong {
-    color: #fff;
+    color: var(--text);
   }
 }
 
@@ -1245,21 +1271,21 @@ table.calculator-table th {
 
 .share-btn {
   background: transparent;
-  border: 1px solid #444;
-  color: #aaa;
+  border: 1px solid var(--employer-border);
+  color: var(--text-muted);
   padding: 0.3rem 1rem;
   font-size: 0.8rem;
   border-radius: 4px;
 
   &:hover {
-    border-color: #d8f24e;
-    color: #d8f24e;
+    border-color: var(--accent);
+    color: var(--accent);
   }
 }
 
 .share-message {
   font-size: 0.8rem;
-  color: #d8f24e;
+  color: var(--accent);
 }
 
 // Frequency tabs (mobile only)
@@ -1276,16 +1302,16 @@ table.calculator-table th {
 .freq-tab {
   flex: 1;
   background: transparent;
-  border: 1px solid #333;
-  color: #aaa;
+  border: 1px solid var(--border-input);
+  color: var(--text-muted);
   padding: 0.35rem 0;
   font-size: 0.75rem;
   border-radius: 4px;
 
   &.active {
-    background: #d8f24e;
-    color: #00001e;
-    border-color: #d8f24e;
+    background: var(--accent);
+    color: var(--accent-on);
+    border-color: var(--accent);
     font-weight: 700;
   }
 }
@@ -1319,19 +1345,45 @@ table.calculator-table th {
     bottom: 0;
     left: 0;
     right: 0;
-    background: #0a0a2e;
-    border-top: 2px solid #d8f24e;
+    background: var(--sticky-bg);
+    border-top: 2px solid var(--accent);
     padding: 0.75rem 1.5rem;
     justify-content: space-between;
     align-items: center;
     z-index: 100;
     font-size: 0.95rem;
-    color: #aaa;
+    color: var(--text-muted);
   }
 }
 
 .sticky-footer-amount {
-  color: #d8f24e;
+  color: var(--accent);
   font-weight: 700;
+}
+
+// Theme toggle
+.theme-toggle-row {
+  width: 400px;
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 0.75rem;
+
+  @media screen and (max-width: 650px) {
+    width: 100%;
+  }
+}
+
+.theme-toggle {
+  background: transparent;
+  border: 1px solid var(--border-input);
+  color: var(--text-muted);
+  padding: 0.3rem 0.6rem;
+  font-size: 1rem;
+  border-radius: 6px;
+  line-height: 1;
+
+  &:hover {
+    border-color: var(--accent);
+  }
 }
 </style>
