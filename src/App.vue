@@ -66,6 +66,7 @@ const employerNICCategory = ref<EmployerNICCategory>("A");
 const incomeTaxExpanded = ref(false);
 const nationalInsuranceExpanded = ref(false);
 const dividendTaxExpanded = ref(false);
+const mobileFreqTab = ref<"annual" | "monthly" | "weekly" | "daily">("annual");
 
 function getPensionAmount(annualGross: number): number {
   if (pensionType.value === "none") return 0;
@@ -289,6 +290,10 @@ const incomeBar = computed<IncomeBarSegment[]>(() => {
 });
 
 const annualGross = computed(() => toAnnual(getIncome(), frequency.value));
+
+const takeHomeAnnual = computed(
+  () => result.value?.headlineFigures.find((f) => f.label === "Take Home")?.annual ?? null,
+);
 
 const sliderValue = computed(() => getIncome());
 
@@ -626,15 +631,23 @@ async function copyShareUrl(): Promise<void> {
 
         <section class="calculator-section">
           <div v-if="result" class="result-box">
-            <div class="table-wrap">
+            <div class="freq-tabs">
+              <button
+                v-for="tab in (['annual', 'monthly', 'weekly', 'daily'] as const)"
+                :key="tab"
+                :class="['freq-tab', { active: mobileFreqTab === tab }]"
+                @click="mobileFreqTab = tab"
+              >{{ tab.charAt(0).toUpperCase() + tab.slice(1) }}</button>
+            </div>
+            <div class="table-wrap" :class="`freq-${mobileFreqTab}`">
               <table class="calculator-table">
                 <thead>
                   <tr>
                     <th></th>
-                    <th>Annually</th>
-                    <th>Monthly</th>
-                    <th>Weekly</th>
-                    <th>Daily</th>
+                    <th class="col-annual">Annually</th>
+                    <th class="col-monthly">Monthly</th>
+                    <th class="col-weekly">Weekly</th>
+                    <th class="col-daily">Daily</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -681,10 +694,10 @@ async function copyShareUrl(): Promise<void> {
                         {{ fig.label }}
                       </template>
                     </td>
-                    <td>£{{ formatCurrency(fig.annual) }}</td>
-                    <td>£{{ formatCurrency(fig.month) }}</td>
-                    <td>£{{ formatCurrency(fig.week) }}</td>
-                    <td>£{{ formatCurrency(fig.day) }}</td>
+                    <td class="col-annual">£{{ formatCurrency(fig.annual) }}</td>
+                    <td class="col-monthly">£{{ formatCurrency(fig.month) }}</td>
+                    <td class="col-weekly">£{{ formatCurrency(fig.week) }}</td>
+                    <td class="col-daily">£{{ formatCurrency(fig.day) }}</td>
                   </tr>
                 </tbody>
               </table>
@@ -803,6 +816,10 @@ async function copyShareUrl(): Promise<void> {
           </div>
         </section>
       </div>
+    </div>
+    <div v-if="takeHomeAnnual !== null" class="sticky-footer">
+      <span>Take Home</span>
+      <span class="sticky-footer-amount">£{{ Math.round(takeHomeAnnual).toLocaleString("en-GB") }}/yr</span>
     </div>
   </main>
 </template>
@@ -1225,5 +1242,79 @@ table.calculator-table th {
 .share-message {
   font-size: 0.8rem;
   color: #d8f24e;
+}
+
+// Frequency tabs (mobile only)
+.freq-tabs {
+  display: none;
+  gap: 0.25rem;
+  margin-bottom: 0.5rem;
+
+  @media screen and (max-width: 650px) {
+    display: flex;
+  }
+}
+
+.freq-tab {
+  flex: 1;
+  background: transparent !important;
+  border: 1px solid #333 !important;
+  color: #aaa !important;
+  padding: 0.35rem 0 !important;
+  font-size: 0.75rem;
+  border-radius: 4px;
+  cursor: pointer;
+
+  &.active {
+    background: #d8f24e !important;
+    color: #00001e !important;
+    border-color: #d8f24e !important;
+    font-weight: 700;
+  }
+}
+
+// Hide non-active columns on mobile inside the freq-* table-wrap
+@media screen and (max-width: 650px) {
+  .table-wrap.freq-annual .col-monthly,
+  .table-wrap.freq-annual .col-weekly,
+  .table-wrap.freq-annual .col-daily { display: none; }
+
+  .table-wrap.freq-monthly .col-annual,
+  .table-wrap.freq-monthly .col-weekly,
+  .table-wrap.freq-monthly .col-daily { display: none; }
+
+  .table-wrap.freq-weekly .col-annual,
+  .table-wrap.freq-weekly .col-monthly,
+  .table-wrap.freq-weekly .col-daily { display: none; }
+
+  .table-wrap.freq-daily .col-annual,
+  .table-wrap.freq-daily .col-monthly,
+  .table-wrap.freq-daily .col-weekly { display: none; }
+}
+
+// Sticky take-home footer (mobile only)
+.sticky-footer {
+  display: none;
+
+  @media screen and (max-width: 850px) {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: #0a0a2e;
+    border-top: 2px solid #d8f24e;
+    padding: 0.75rem 1.5rem;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 100;
+    font-size: 0.95rem;
+    color: #aaa;
+  }
+}
+
+.sticky-footer-amount {
+  color: #d8f24e;
+  font-weight: 700;
 }
 </style>
