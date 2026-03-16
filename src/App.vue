@@ -32,8 +32,24 @@ interface CalculationResult {
   dividendTaxBreakdown: Breakdown[];
 }
 
+interface IncomeBarSegment {
+  label: string;
+  pct: number;
+  colour: string;
+}
+
 type PensionType = "none" | "salary-sacrifice" | "relief-at-source";
 type PensionMode = "percent" | "amount";
+
+const INCOME_BAR_COLOURS: Record<string, string> = {
+  Pension: "#5bc0eb",
+  "Income Tax": "#e8563a",
+  "National Insurance": "#9b5de5",
+  "National Insurance (Self-Employed)": "#9b5de5",
+  "Student Loan": "#00bbf9",
+  "Dividend Tax": "#f5a623",
+  "Take Home": "#d8f24e",
+};
 
 const title = "Tax Calculator";
 const income = ref("");
@@ -259,6 +275,19 @@ const employerNICs = computed(() => {
   return calculateEmployerNationalInsurance(nicIncome, employerNICCategory.value);
 });
 
+const incomeBar = computed<IncomeBarSegment[]>(() => {
+  if (!result.value) return [];
+  const gross = result.value.headlineFigures[0]?.annual ?? 0;
+  if (gross === 0) return [];
+  return result.value.headlineFigures
+    .filter((f) => f.label !== "Gross Income")
+    .map((f) => ({
+      label: f.label,
+      pct: (f.annual / gross) * 100,
+      colour: INCOME_BAR_COLOURS[f.label] ?? "#888",
+    }));
+});
+
 function formatWithCommas(value: string): string {
   if (!value) {
     return "";
@@ -293,8 +322,8 @@ function getIncome(): number {
 
 <template>
   <main class="main">
-    <div class="content-container">
-      <div class="content">
+    <div class="app-layout">
+      <div class="form-panel">
         <h1>{{ title }}</h1>
 
         <div class="form-element">
@@ -366,7 +395,7 @@ function getIncome(): number {
         </div>
 
         <div v-if="pensionType !== 'none'" class="form-element">
-          <label for="pension-amount">Amount: </label>
+          <label for="pension-amount">Pension Contribution: </label>
           <div class="input-row">
             <span v-if="pensionMode === 'amount'">£</span>
             <input
@@ -427,6 +456,25 @@ function getIncome(): number {
             <option value="Z">Z — Under 21, deferred NIC</option>
           </select>
         </div>
+      </div>
+
+      <div class="results-panel">
+        <div v-if="incomeBar.length" class="income-bar-wrap">
+          <div class="income-bar">
+            <div
+              v-for="seg in incomeBar"
+              :key="seg.label"
+              class="income-bar-segment"
+              :style="{ width: seg.pct + '%', background: seg.colour }"
+            ></div>
+          </div>
+          <div class="income-bar-legend">
+            <div v-for="seg in incomeBar" :key="seg.label" class="legend-item">
+              <span class="legend-dot" :style="{ background: seg.colour }"></span>
+              <span class="legend-label">{{ seg.label }}</span>
+            </div>
+          </div>
+        </div>
 
         <section class="calculator-section">
           <div v-if="result" class="result-box">
@@ -442,7 +490,11 @@ function getIncome(): number {
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="fig in result.headlineFigures" :key="fig.label">
+                  <tr
+                    v-for="fig in result.headlineFigures"
+                    :key="fig.label"
+                    :class="{ 'take-home-row': fig.label === 'Take Home' }"
+                  >
                     <td>
                       <button
                         v-if="fig.label === 'Income Tax'"
@@ -632,38 +684,43 @@ p {
   color: $gray-700;
 }
 
-main {
+main.main {
   width: 100%;
   min-height: 100%;
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: flex-start;
   padding: 1rem;
+  padding-bottom: 5rem;
   box-sizing: inherit;
   position: relative;
 }
 
-.content-container {
-  display: flex;
-  justify-content: space-around;
+.app-layout {
+  display: grid;
+  grid-template-columns: 400px 1fr;
+  gap: 2rem;
   width: 100%;
-  margin-bottom: 3rem;
+  max-width: 1200px;
+  align-items: start;
+
+  @media screen and (max-width: 850px) {
+    grid-template-columns: 1fr;
+  }
 }
 
-.content h1 {
+.form-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.form-panel h1 {
   margin-top: 1.75rem;
 }
 
-.content p {
-  margin-top: 1.5rem;
-}
-
-.content {
-  width: 900px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
+.results-panel {
+  padding-top: 1rem;
 }
 
 .divider {
@@ -696,6 +753,10 @@ form .button-container {
     width: 100%;
     background: $red-to-pink-to-purple-horizontal-gradient;
     margin-block: 1.5rem;
+  }
+
+  .form-element {
+    width: 100%;
   }
 }
 
@@ -733,8 +794,25 @@ table.calculator-table {
 
 table.calculator-table th,
 table.calculator-table td {
-  padding: 8px;
+  padding: 10px 8px;
   border-bottom: 1px solid #f5f5f5;
+  text-align: right;
+}
+
+table.calculator-table th:first-child,
+table.calculator-table td:first-child {
+  text-align: left;
+}
+
+table.calculator-table tbody tr:nth-child(even) {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.take-home-row td {
+  color: #d8f24e;
+  font-size: 1.05rem;
+  font-weight: 800;
+  border-top: 1px solid #222;
 }
 
 .inline-details {
@@ -780,7 +858,6 @@ table.calculator-table td {
 
 table.calculator-table th {
   border-bottom: 1px solid #ddd;
-  text-align: left;
 }
 
 .employer-cost-box {
@@ -798,5 +875,44 @@ table.calculator-table th {
   align-items: center;
   gap: 0.375rem;
   cursor: pointer;
+}
+
+// Income breakdown bar
+.income-bar-wrap {
+  margin-bottom: 1rem;
+}
+
+.income-bar {
+  display: flex;
+  height: 28px;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.income-bar-segment {
+  transition: width 0.3s ease;
+  flex-shrink: 0;
+}
+
+.income-bar-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+  color: #ccc;
+}
+
+.legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  flex-shrink: 0;
 }
 </style>
