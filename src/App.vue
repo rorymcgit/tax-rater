@@ -649,6 +649,7 @@ async function copyShareUrl(): Promise<void> {
         </div>
 
         <section class="calculator-section">
+          <Transition name="fade">
           <div v-if="result" class="result-box">
             <div class="freq-tabs">
               <button
@@ -805,6 +806,7 @@ async function copyShareUrl(): Promise<void> {
               </div>
             </template>
           </div>
+          </Transition>
         </section>
 
         <section v-if="employerNICs" class="calculator-section">
@@ -1359,6 +1361,16 @@ table.calculator-table th {
 .sticky-footer-amount {
   color: var(--accent);
   font-weight: 700;
+}
+
+// Fade transition
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 
 // Theme toggle
