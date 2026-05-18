@@ -323,8 +323,8 @@ const nextBandMessage = computed<string | null>(() => {
 
   if (region.value === "scotland") {
     if (gross < 12_570) return `${formatPounds(12_570 - gross)} until Starter Rate (19%)`;
-    if (gross < 15_397) return `${formatPounds(15_397 - gross)} until Basic Rate (20%)`;
-    if (gross < 27_491) return `${formatPounds(27_491 - gross)} until Intermediate Rate (21%)`;
+    if (gross < 16_537) return `${formatPounds(16_537 - gross)} until Basic Rate (20%)`;
+    if (gross < 29_526) return `${formatPounds(29_526 - gross)} until Intermediate Rate (21%)`;
     if (gross < 43_662) return `${formatPounds(43_662 - gross)} until Higher Rate (42%)`;
     if (gross < 75_000) return `${formatPounds(75_000 - gross)} until Advanced Rate (45%)`;
     if (gross < 100_000) return `${formatPounds(100_000 - gross)} until Personal Allowance taper`;
@@ -358,8 +358,8 @@ const marginalRate = computed<MarginalRate | null>(() => {
 
   if (region.value === "scotland") {
     if (gross <= 12_570) itRate = 0;
-    else if (gross <= 15_397) itRate = 19;
-    else if (gross <= 27_491) itRate = 20;
+    else if (gross <= 16_537) itRate = 19;
+    else if (gross <= 29_526) itRate = 20;
     else if (gross <= 43_662) itRate = 21;
     else if (gross <= 75_000) itRate = 42;
     else if (gross <= 100_000) itRate = 45;
@@ -383,8 +383,8 @@ const marginalRate = computed<MarginalRate | null>(() => {
     else niRate = 2;
   } else {
     nicLabel = "NI";
-    if (gross <= 12_584) niRate = 0;
-    else if (gross <= 50_284) niRate = 8;
+    if (gross <= 12_570) niRate = 0;
+    else if (gross <= 50_270) niRate = 8;
     else niRate = 2;
   }
 
@@ -604,7 +604,12 @@ async function copyShareUrl(): Promise<void> {
 
         <div v-if="employmentType === 'employed'" class="form-element">
           <label for="show-employer-nics">Employer NICs: </label>
-          <input type="checkbox" id="show-employer-nics" v-model="showEmployerNICs" />
+          <label class="toggle-switch">
+            <input type="checkbox" id="show-employer-nics" v-model="showEmployerNICs" />
+            <span class="toggle-track">
+              <span class="toggle-thumb"></span>
+            </span>
+          </label>
         </div>
 
         <div v-if="showEmployerNICs && employmentType === 'employed'" class="form-element">
@@ -691,6 +696,7 @@ async function copyShareUrl(): Promise<void> {
                         v-if="fig.label === 'Income Tax'"
                         class="expand-row-btn"
                         type="button"
+                        :aria-expanded="incomeTaxExpanded"
                         @click="toggleIncomeTaxExpanded"
                       >
                         {{ fig.label }}
@@ -702,6 +708,7 @@ async function copyShareUrl(): Promise<void> {
                         v-else-if="fig.label.startsWith('National Insurance')"
                         class="expand-row-btn"
                         type="button"
+                        :aria-expanded="nationalInsuranceExpanded"
                         @click="toggleNationalInsuranceExpanded"
                       >
                         {{ fig.label }}
@@ -713,6 +720,7 @@ async function copyShareUrl(): Promise<void> {
                         v-else-if="fig.label === 'Dividend Tax'"
                         class="expand-row-btn"
                         type="button"
+                        :aria-expanded="dividendTaxExpanded"
                         @click="toggleDividendTaxExpanded"
                       >
                         {{ fig.label }}
@@ -734,16 +742,22 @@ async function copyShareUrl(): Promise<void> {
             </div>
 
             <div class="rates-row">
-              <span class="effective-rate">Effective: {{ formatCurrency(result.effectiveRate) }}%</span>
-              <span v-if="marginalRate" class="marginal-rate">
-                Marginal: {{ marginalRate.total }}%
-                <template v-if="marginalRate.itRate > 0">
-                  = {{ marginalRate.itRate }}% IT<template v-if="marginalRate.isTaper">*</template> + {{ marginalRate.niRate }}% {{ marginalRate.nicLabel }}
-                </template>
-                <template v-else>
-                  = {{ marginalRate.niRate }}% {{ marginalRate.nicLabel }} only
-                </template>
-              </span>
+              <div class="rate-stat">
+                <span class="rate-stat__value">{{ formatCurrency(result.effectiveRate) }}%</span>
+                <span class="rate-stat__label">Effective rate</span>
+              </div>
+              <div v-if="marginalRate" class="rate-stat">
+                <span class="rate-stat__value rate-stat__value--muted">{{ marginalRate.total }}%</span>
+                <span class="rate-stat__label">
+                  Marginal
+                  <template v-if="marginalRate.itRate > 0">
+                    ({{ marginalRate.itRate }}% IT<template v-if="marginalRate.isTaper">*</template> + {{ marginalRate.niRate }}% {{ marginalRate.nicLabel }})
+                  </template>
+                  <template v-else>
+                    ({{ marginalRate.niRate }}% {{ marginalRate.nicLabel }} only)
+                  </template>
+                </span>
+              </div>
             </div>
             <div class="share-row">
               <button class="share-btn" @click="copyShareUrl">Share</button>
@@ -1095,8 +1109,13 @@ table.calculator-table tbody tr:nth-child(even) {
   width: 100%;
 }
 
-.full-width-breakdown h4 {
-  margin: 0 0 0.5rem 0;
+.full-width-breakdown h3 {
+  margin: 0.75rem 0 0.25rem 0;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-subtle);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
 }
 
 table.calculator-table th {
@@ -1267,22 +1286,42 @@ table.calculator-table th {
 .rates-row {
   display: flex;
   justify-content: center;
-  align-items: center;
-  gap: 1.5rem;
-  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 0;
   margin-top: 1rem;
-  padding-top: 0.75rem;
   border-top: 1px solid var(--take-home-separator);
-  font-size: 0.9rem;
 }
 
-.effective-rate {
+.rate-stat {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.75rem 0.5rem 0.5rem;
+  gap: 0.2rem;
+
+  & + & {
+    border-left: 1px solid var(--take-home-separator);
+  }
+}
+
+.rate-stat__value {
+  font-size: 1.4rem;
+  font-weight: 800;
   color: var(--accent);
-  font-weight: 700;
+  line-height: 1;
+
+  &--muted {
+    color: var(--text-muted);
+  }
 }
 
-.marginal-rate {
-  color: var(--text-muted);
+.rate-stat__label {
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  font-weight: 400;
+  text-align: center;
+  line-height: 1.3;
 }
 
 // Pension tooltip
@@ -1321,6 +1360,56 @@ table.calculator-table th {
 
 .tooltip-wrap:hover .tooltip-text {
   display: block;
+}
+
+// Toggle switch
+.toggle-switch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+
+  input[type="checkbox"] {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+}
+
+.toggle-track {
+  width: 36px;
+  height: 20px;
+  background: var(--border-input);
+  border-radius: 10px;
+  border: 1px solid var(--border-input);
+  transition: background 0.2s ease, border-color 0.2s ease;
+  position: relative;
+
+  .toggle-switch input:checked ~ & {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+
+  .toggle-switch input:focus-visible ~ & {
+    box-shadow: var(--focus-ring);
+  }
+}
+
+.toggle-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--text-dim);
+  transition: transform 0.2s ease, background 0.2s ease;
+
+  .toggle-switch input:checked ~ .toggle-track & {
+    transform: translateX(16px);
+    background: var(--accent-on);
+  }
 }
 
 // Share row
