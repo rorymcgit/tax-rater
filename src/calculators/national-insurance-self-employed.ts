@@ -1,9 +1,9 @@
 import { Breakdown } from '../types/tax';
 
 /*
-  Self-Employed NICs (2025/2026)
+  Self-Employed NICs (2026/2027)
 
-  Class 2: flat £3.45/week (£179.40/year) if annual profits > £12,570
+  Class 2: flat £3.65/week (£189.80/year) if annual profits > £12,570
   Class 4:
     6% on profits £12,570–£50,270
     2% above £50,270
@@ -11,8 +11,8 @@ import { Breakdown } from '../types/tax';
   https://www.gov.uk/self-employed-national-insurance-rates
 */
 
-const CLASS_2_WEEKLY_RATE = 3.45;
-const CLASS_2_ANNUAL = CLASS_2_WEEKLY_RATE * 52; // £179.40
+const CLASS_2_WEEKLY_RATE = 3.65;
+const CLASS_2_ANNUAL = CLASS_2_WEEKLY_RATE * 52; // £189.80
 const CLASS_2_THRESHOLD = 12_570;
 
 const CLASS_4_BANDS = {

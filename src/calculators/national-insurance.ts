@@ -18,21 +18,21 @@ import { Breakdown, Tax } from '../types/tax';
     2%      £967+               £4,189+
   */
 
-// UK national insurance bands (2025/2026 FY)
+// UK national insurance bands (2026/2027 FY)
 // FYI this is for Category A only - which _most_ people fit into
 const EMPLOYEE_BANDS = {
   bottom: {
     lower: 0,
-    upper: 12584,
+    upper: 12570,
     rate: 0,
   },
   mid: {
-    lower: 12584,
-    upper: 50284,
+    lower: 12570,
+    upper: 50270,
     rate: 0.08,
   },
   higher: {
-    lower: 50284,
+    lower: 50270,
     upper: Infinity,
     rate: 0.02,
   },

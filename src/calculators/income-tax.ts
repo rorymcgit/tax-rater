@@ -20,7 +20,7 @@ const PERSONAL_ALLOWANCE = 12_570;
 // Scotland: Top Rate). This is also the income at which the personal allowance reaches 0.
 const TOP_RATE_GROSS_THRESHOLD = 125_140;
 
-// England / Wales / NI bands (2025/2026 FY) — expressed as taxable income thresholds.
+// England / Wales / NI bands (2026/2027 FY) — expressed as taxable income thresholds.
 // The higher rate upper bound is dynamic: (TOP_RATE_GROSS_THRESHOLD - personalAllowance).
 function getEnglandBands(topRateThreshold: number): TaxBand[] {
   return [
@@ -35,14 +35,14 @@ function getEnglandBands(topRateThreshold: number): TaxBand[] {
   ];
 }
 
-// Scotland bands (2025/2026 FY) — expressed as taxable income thresholds.
-// Gross income thresholds: 15397, 27491, 43662, 75000, 125140.
+// Scotland bands (2026/2027 FY) — expressed as taxable income thresholds.
+// Gross income thresholds: 16537, 29526, 43662, 75000, 125140.
 // Taxable income thresholds derived by subtracting full PA (12570) from each gross threshold.
 function getScotlandBands(topRateThreshold: number): TaxBand[] {
   return [
-    { name: 'Starter Rate', lower: 0, upper: 2_827, rate: 0.19 },
-    { name: 'Scottish Basic Rate', lower: 2_827, upper: 14_921, rate: 0.2 },
-    { name: 'Intermediate Rate', lower: 14_921, upper: 31_092, rate: 0.21 },
+    { name: 'Starter Rate', lower: 0, upper: 3_967, rate: 0.19 },
+    { name: 'Scottish Basic Rate', lower: 3_967, upper: 16_956, rate: 0.2 },
+    { name: 'Intermediate Rate', lower: 16_956, upper: 31_092, rate: 0.21 },
     { name: 'Higher Rate', lower: 31_092, upper: 62_430, rate: 0.42 },
     {
       name: 'Advanced Rate',

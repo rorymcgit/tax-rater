@@ -1,11 +1,11 @@
 import { Tax, Breakdown } from "../types/tax";
 
 /*
-  Dividend tax — 2025/2026 (UK-wide, not devolved)
+  Dividend tax — 2026/2027 (UK-wide, not devolved)
 
   Dividend allowance: £500 tax-free
-  Basic rate:     8.75%  on dividends within the basic rate band (£12,570–£50,270)
-  Higher rate:    33.75% on dividends within the higher rate band (£50,270–£125,140)
+  Basic rate:     10.75% on dividends within the basic rate band (£12,570–£50,270)
+  Higher rate:    35.75% on dividends within the higher rate band (£50,270–£125,140)
   Additional rate: 39.35% on dividends above £125,140
 
   Dividends sit on top of salary — salary uses up the bands first.
@@ -46,8 +46,8 @@ export function calculateDividendTax(
   const basicBandSpace = Math.max(0, BASIC_UPPER - BASIC_LOWER - salaryInBasic);
   const basicTaxable = Math.min(remaining, basicBandSpace);
   if (basicTaxable > 0) {
-    const bandTax = basicTaxable * 0.0875;
-    breakdown.push({ band: "Basic Rate (8.75%)", taxable: basicTaxable, tax: bandTax });
+    const bandTax = basicTaxable * 0.1075;
+    breakdown.push({ band: "Basic Rate (10.75%)", taxable: basicTaxable, tax: bandTax });
     tax += bandTax;
     remaining -= basicTaxable;
   }
@@ -61,8 +61,8 @@ export function calculateDividendTax(
   const higherBandSpace = Math.max(0, HIGHER_UPPER - BASIC_UPPER - salaryInHigher);
   const higherTaxable = Math.min(remaining, higherBandSpace);
   if (higherTaxable > 0) {
-    const bandTax = higherTaxable * 0.3375;
-    breakdown.push({ band: "Higher Rate (33.75%)", taxable: higherTaxable, tax: bandTax });
+    const bandTax = higherTaxable * 0.3575;
+    breakdown.push({ band: "Higher Rate (35.75%)", taxable: higherTaxable, tax: bandTax });
     tax += bandTax;
     remaining -= higherTaxable;
   }

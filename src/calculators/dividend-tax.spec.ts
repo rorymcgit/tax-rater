@@ -22,25 +22,25 @@ describe("calculateDividendTax", () => {
 
   it("taxes dividends above allowance at basic rate when salary is in basic band", () => {
     // Salary £30,000: basic band used = 30000 - 12570 = 17430; space = 37700 - 17430 = 20270
-    // Dividends £2,000: £500 allowance + £1,500 at 8.75% = £131.25
+    // Dividends £2,000: £500 allowance + £1,500 at 10.75% = £161.25
     const result = calculateDividendTax(2_000, 30_000);
-    expect(result.tax).toBeCloseTo(131.25, 2);
+    expect(result.tax).toBeCloseTo(161.25, 2);
   });
 
   it("dividends span basic and higher rate bands", () => {
     // Salary £45,000: basic band space = 50270 - 45000 = 5270
-    // Dividends £10,000: £500 allowance, then £5,270 at 8.75%, then £4,230 at 33.75%
-    const basicTax = 5_270 * 0.0875;
-    const higherTax = 4_230 * 0.3375;
+    // Dividends £10,000: £500 allowance, then £5,270 at 10.75%, then £4,230 at 35.75%
+    const basicTax = 5_270 * 0.1075;
+    const higherTax = 4_230 * 0.3575;
     const result = calculateDividendTax(10_000, 45_000);
     expect(result.tax).toBeCloseTo(basicTax + higherTax, 2);
   });
 
   it("salary already in higher rate — dividends taxed at higher rate from the start", () => {
     // Salary £60,000 (fully above basic band): no basic band space
-    // Dividends £5,000: £500 allowance + £4,500 at 33.75% = £1518.75
+    // Dividends £5,000: £500 allowance + £4,500 at 35.75% = £1608.75
     const result = calculateDividendTax(5_000, 60_000);
-    expect(result.tax).toBeCloseTo(4_500 * 0.3375, 2);
+    expect(result.tax).toBeCloseTo(4_500 * 0.3575, 2);
   });
 
   it("dividends reach additional rate band", () => {
@@ -52,9 +52,9 @@ describe("calculateDividendTax", () => {
 
   it("zero salary — dividends use full bands from scratch", () => {
     // Dividends £60,000: £500 allowance, then basic band space = 50270 - 12570 = 37700
-    // £500 allowance + £37,700 at 8.75% + £21,800 at 33.75%
-    const basicTax = 37_700 * 0.0875;
-    const higherTax = 21_800 * 0.3375;
+    // £500 allowance + £37,700 at 10.75% + £21,800 at 35.75%
+    const basicTax = 37_700 * 0.1075;
+    const higherTax = 21_800 * 0.3575;
     const result = calculateDividendTax(60_000, 0);
     expect(result.tax).toBeCloseTo(basicTax + higherTax, 2);
   });
