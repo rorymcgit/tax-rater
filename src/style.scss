@@ -14,7 +14,8 @@
   --table-cell-border: rgba(255, 255, 255, 0.06);
   --table-header-border: rgba(255, 255, 255, 0.12);
   --table-stripe: rgba(255, 255, 255, 0.02);
-  --take-home-separator: #222;
+  --take-home-separator: #2a2a2a;
+  --take-home-row-bg: rgba(216, 242, 78, 0.06);
   --slider-track: #1a1a3e;
   --nudge-bg: rgba(255, 255, 255, 0.03);
   --tooltip-bg: #1a1a3e;
@@ -41,6 +42,7 @@ html.light {
   --table-header-border: rgba(0, 0, 0, 0.14);
   --table-stripe: rgba(0, 0, 0, 0.02);
   --take-home-separator: #d8d8e8;
+  --take-home-row-bg: rgba(30, 58, 138, 0.06);
   --slider-track: #d0d0e8;
   --nudge-bg: rgba(30, 58, 138, 0.1);
   --tooltip-bg: #ffffff;

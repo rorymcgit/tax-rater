@@ -647,10 +647,20 @@ async function copyShareUrl(): Promise<void> {
             </div>
           </div>
         </div>
+        <div v-else class="income-bar-wrap income-bar-wrap--placeholder">
+          <div class="income-bar income-bar--placeholder"></div>
+          <div class="income-bar-legend">
+            <div v-for="label in ['Income Tax', 'National Insurance', 'Take Home']" :key="label" class="legend-item legend-item--placeholder">
+              <span class="legend-dot"></span>
+              <span class="legend-label">{{ label }}</span>
+            </div>
+          </div>
+        </div>
 
         <section class="calculator-section">
           <Transition name="fade">
           <div v-if="result" class="result-box">
+
             <div class="freq-tabs">
               <button
                 v-for="tab in (['annual', 'monthly', 'weekly', 'daily'] as const)"
@@ -679,36 +689,36 @@ async function copyShareUrl(): Promise<void> {
                     <td>
                       <button
                         v-if="fig.label === 'Income Tax'"
-                        class="inline-summary"
+                        class="expand-row-btn"
                         type="button"
                         @click="toggleIncomeTaxExpanded"
                       >
-                        <span class="arrow">{{
-                          incomeTaxExpanded ? "▾" : "▸"
-                        }}</span>
                         {{ fig.label }}
+                        <svg class="expand-chevron" :class="{ open: incomeTaxExpanded }" width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                          <polyline points="2 4 6 8 10 4" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
                       </button>
                       <button
                         v-else-if="fig.label.startsWith('National Insurance')"
-                        class="inline-summary"
+                        class="expand-row-btn"
                         type="button"
                         @click="toggleNationalInsuranceExpanded"
                       >
-                        <span class="arrow">{{
-                          nationalInsuranceExpanded ? "▾" : "▸"
-                        }}</span>
                         {{ fig.label }}
+                        <svg class="expand-chevron" :class="{ open: nationalInsuranceExpanded }" width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                          <polyline points="2 4 6 8 10 4" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
                       </button>
                       <button
                         v-else-if="fig.label === 'Dividend Tax'"
-                        class="inline-summary"
+                        class="expand-row-btn"
                         type="button"
                         @click="toggleDividendTaxExpanded"
                       >
-                        <span class="arrow">{{
-                          dividendTaxExpanded ? "▾" : "▸"
-                        }}</span>
                         {{ fig.label }}
+                        <svg class="expand-chevron" :class="{ open: dividendTaxExpanded }" width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                          <polyline points="2 4 6 8 10 4" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
                       </button>
                       <template v-else>
                         {{ fig.label }}
@@ -807,6 +817,32 @@ async function copyShareUrl(): Promise<void> {
             </template>
           </div>
           </Transition>
+          <div v-if="!result" class="result-placeholder">
+            <div class="placeholder-table">
+              <div class="placeholder-header">
+                <div class="ph-cell wide"></div>
+                <div class="ph-cell"></div>
+                <div class="ph-cell"></div>
+                <div class="ph-cell"></div>
+                <div class="ph-cell"></div>
+              </div>
+              <div class="placeholder-row" v-for="i in 4" :key="i">
+                <div class="ph-cell wide"></div>
+                <div class="ph-cell"></div>
+                <div class="ph-cell"></div>
+                <div class="ph-cell"></div>
+                <div class="ph-cell"></div>
+              </div>
+              <div class="placeholder-row take-home">
+                <div class="ph-cell wide accent"></div>
+                <div class="ph-cell accent"></div>
+                <div class="ph-cell accent"></div>
+                <div class="ph-cell accent"></div>
+                <div class="ph-cell accent"></div>
+              </div>
+            </div>
+            <p class="placeholder-hint">Enter your income to see your breakdown</p>
+          </div>
         </section>
 
         <section v-if="employerNICs" class="calculator-section">
@@ -1005,37 +1041,49 @@ table.calculator-table tbody tr:nth-child(even) {
 
 .take-home-row td {
   color: var(--accent);
-  font-size: 1.05rem;
+  font-size: 1.15rem;
   font-weight: 800;
-  border-top: 1px solid var(--take-home-separator);
+  border-top: 2px solid var(--take-home-separator);
+  background: var(--take-home-row-bg);
+  padding-top: 14px;
+  padding-bottom: 14px;
 }
 
-.inline-details {
-  display: block;
-}
-
-.inline-summary {
-  list-style: none;
+.expand-row-btn {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  font-weight: 600;
+  color: var(--text);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0;
-  margin: 0;
-  font-weight: 600;
-  color: var(--text);
-  background: transparent;
-  border: 0;
-  font: inherit;
+  gap: 0.4rem;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-style: dotted;
+  text-decoration-color: var(--text-dim);
+
+  &:hover {
+    color: var(--accent);
+    text-decoration-color: var(--accent);
+  }
 }
 
-.inline-summary .arrow {
-  display: inline-block;
-  transition: transform 0.15s ease;
-}
+.expand-chevron {
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+  color: var(--text-dim);
 
-.inline-details[open] .inline-summary .arrow {
-  transform: rotate(90deg);
+  .expand-row-btn:hover & {
+    color: var(--accent);
+  }
+
+  &.open {
+    transform: rotate(180deg);
+  }
 }
 
 .breakdown-inline {
@@ -1095,6 +1143,19 @@ table.calculator-table th {
 .income-bar-segment {
   transition: width 0.3s ease;
   flex-shrink: 0;
+}
+
+.income-bar--placeholder {
+  background: var(--border);
+  opacity: 0.4;
+}
+
+.legend-item--placeholder {
+  opacity: 0.35;
+
+  .legend-dot {
+    background: var(--text-dim);
+  }
 }
 
 .income-bar-legend {
@@ -1371,6 +1432,70 @@ table.calculator-table th {
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
+}
+
+// Empty state placeholder
+.result-placeholder {
+  margin-top: 1rem;
+  padding: 24px;
+  border: 1px dashed var(--border);
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.placeholder-table {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.placeholder-header {
+  display: flex;
+  gap: 8px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--table-header-border);
+  margin-bottom: 4px;
+}
+
+.placeholder-row {
+  display: flex;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--table-cell-border);
+
+  &.take-home {
+    padding: 12px 0;
+    border-top: 2px solid var(--take-home-separator);
+    border-bottom: none;
+    margin-top: 4px;
+  }
+}
+
+.ph-cell {
+  height: 12px;
+  border-radius: 4px;
+  background: var(--border);
+  opacity: 0.5;
+  flex: 1;
+
+  &.wide {
+    flex: 2.5;
+  }
+
+  &.accent {
+    background: var(--accent);
+    opacity: 0.15;
+  }
+}
+
+.placeholder-hint {
+  text-align: center;
+  color: var(--text-dim);
+  font-size: 0.85rem;
+  font-weight: 400;
+  margin: 0;
 }
 
 // Theme toggle
