@@ -1120,6 +1120,12 @@ table.calculator-table tbody tr:nth-child(even) {
 
 table.calculator-table th {
   border-bottom: 1px solid var(--table-header-border);
+  font-size: 0.68rem;
+  font-weight: 400;
+  color: var(--text-dim);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding-bottom: 6px;
 }
 
 .employer-cost-box {
